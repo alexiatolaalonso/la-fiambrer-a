@@ -6,6 +6,7 @@ import { SelectorSemana } from "@/components/SelectorSemana";
 import { ejecutar, semanaPorDefecto, useCatalogo, useRefrescar, useSemana, type Franja } from "@/lib/datos";
 import { DIAS, addDias, diasDescansoFaltante, estadoCobertura, hhmm, horasFranja } from "@/lib/reglas";
 import { cn } from "@/lib/utils";
+import { ChefHat, Grape } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/planificador")({
   head: () => ({ meta: [{ title: "Planificador semanal — La Fiambrería" }, { name: "description", content: "Asigna personas a franjas con validación de descanso, disponibilidad y habilidades." }, { property: "og:title", content: "Planificador semanal — La Fiambrería" }, { property: "og:description", content: "Grilla semanal de turnos." }] }),
@@ -86,6 +87,11 @@ function Planificador() {
     const t = ls.includes("tienda"), w = ls.includes("winebar");
     return t && w ? "border-l-tienda border-r-winebar border-l-4 border-r-4" : t ? "border-l-4 border-l-tienda" : w ? "border-l-4 border-l-winebar" : "";
   };
+  const tipoLocal = (id: string) => {
+    const ls = personas.find((p) => p.id === id)?.locales ?? [];
+    const t = ls.includes("tienda"), w = ls.includes("winebar");
+    return t && w ? "ambos" : t ? "tienda" : w ? "winebar" : null;
+  };
   const nombreLocal = (id: string) => cat.data?.locales.find((l) => l.id === id)?.nombre ?? id;
   const nombrePuesto = (id: string) => cat.data?.puestos.find((l) => l.id === id)?.nombre ?? id;
 
@@ -121,9 +127,15 @@ function Planificador() {
                 onDragStart={(e) => e.dataTransfer.setData("text/persona", p.id)}
                 onClick={() => setElegida(elegida === p.id ? null : p.id)}
                 aria-pressed={elegida === p.id}
-                className={cn("rounded-md border px-2 py-1 text-left text-sm", colorLocal(p.id), elegida === p.id ? "border-primary bg-primary text-primary-foreground" : "border-border bg-background hover:bg-accent")}
+                className={cn("relative overflow-hidden rounded-md border px-2 pb-1 pt-2.5 text-left text-sm",
+                  elegida === p.id ? "border-primary bg-primary text-primary-foreground" :
+                  cn("border-border hover:bg-accent", { tienda: "bg-tienda/10", winebar: "bg-winebar/10", ambos: "bg-gradient-to-r from-tienda/10 to-winebar/10" }[tipoLocal(p.id) ?? "tienda"] ?? "bg-background"))}
               >
+                <span aria-hidden className={cn("absolute inset-x-0 top-0 h-1.5", { tienda: "bg-tienda", winebar: "bg-winebar", ambos: "bg-gradient-to-r from-tienda from-50% to-winebar to-50%" }[tipoLocal(p.id) ?? "tienda"])} />
                 <span className="font-semibold">{p.alias}</span>
+                {p.habilidades.includes("Cocina") && <ChefHat aria-label="Cocina" className="ml-1 inline h-3.5 w-3.5 align-[-2px]" />}
+                {p.habilidades.some((h) => h.toLowerCase().includes("vino")) && <Grape aria-label="Sumiller" className="ml-1 inline h-3.5 w-3.5 align-[-2px]" />}
+                <span className={cn("ml-1 text-[10px] font-semibold", elegida === p.id ? "" : tipoLocal(p.id) === "winebar" ? "text-winebar" : "text-tienda")}>{{ tienda: "Tienda", winebar: "Wine Bar", ambos: "Ambos" }[tipoLocal(p.id) ?? "tienda"]}</span>
                 <span className={cn("ml-1 text-xs", horas > Number(p.tope_semanal) ? "text-alerta font-bold" : "opacity-70")}>{horas}h/{Number(p.tope_semanal)}</span>
                 <span className="mt-1 flex gap-0.5" aria-label={`Días trabajados de ${p.alias}`}>
                   {DIAS.map((d, i) => {
