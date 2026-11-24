@@ -36,6 +36,8 @@
   --color-alerta-foreground: var(--alerta-foreground);
   --color-peligro: var(--peligro);
   --color-peligro-foreground: var(--peligro-foreground);
+  --color-tienda: var(--tienda);
+  --color-winebar: var(--winebar);
   --color-sidebar: var(--card);
   --color-sidebar-foreground: var(--foreground);
   --color-sidebar-primary: var(--primary);
@@ -80,6 +82,9 @@
   /* ámbar #C9A227 */
   --alerta: oklch(0.72 0.135 88);
   --alerta-foreground: oklch(0.25 0.03 40);
+  /* locales: Tienda azul pizarra, Wine Bar ciruela */
+  --tienda: oklch(0.5 0.08 245);
+  --winebar: oklch(0.45 0.12 330);
   --border: oklch(0.85 0.025 75);
   --input: oklch(0.82 0.025 75);
   --ring: oklch(0.33 0.095 8);

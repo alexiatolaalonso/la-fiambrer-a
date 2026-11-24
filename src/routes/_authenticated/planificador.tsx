@@ -81,6 +81,11 @@ function Planificador() {
   if (cat.isLoading || sem.isLoading) return <p className="text-muted-foreground">Cargando pizarra…</p>;
   if (!semanaId || !sem.data) return <p>No hay semanas.</p>;
 
+  const colorLocal = (id: string) => {
+    const ls = personas.find((p) => p.id === id)?.locales ?? [];
+    const t = ls.includes("tienda"), w = ls.includes("winebar");
+    return t && w ? "border-l-tienda border-r-winebar border-l-4 border-r-4" : t ? "border-l-4 border-l-tienda" : w ? "border-l-4 border-l-winebar" : "";
+  };
   const nombreLocal = (id: string) => cat.data?.locales.find((l) => l.id === id)?.nombre ?? id;
   const nombrePuesto = (id: string) => cat.data?.puestos.find((l) => l.id === id)?.nombre ?? id;
 
@@ -116,7 +121,7 @@ function Planificador() {
                 onDragStart={(e) => e.dataTransfer.setData("text/persona", p.id)}
                 onClick={() => setElegida(elegida === p.id ? null : p.id)}
                 aria-pressed={elegida === p.id}
-                className={cn("rounded-md border px-2 py-1 text-left text-sm", elegida === p.id ? "border-primary bg-primary text-primary-foreground" : "border-border bg-background hover:bg-accent")}
+                className={cn("rounded-md border px-2 py-1 text-left text-sm", colorLocal(p.id), elegida === p.id ? "border-primary bg-primary text-primary-foreground" : "border-border bg-background hover:bg-accent")}
               >
                 <span className="font-semibold">{p.alias}</span>
                 <span className={cn("ml-1 text-xs", horas > Number(p.tope_semanal) ? "text-alerta font-bold" : "opacity-70")}>{horas}h/{Number(p.tope_semanal)}</span>
@@ -173,7 +178,7 @@ function Planificador() {
                             </div>
                             <ul className="space-y-0.5">
                               {asignados.map((t) => (
-                                <li key={t.id} className="flex items-center justify-between gap-1 rounded bg-background px-1">
+                                <li key={t.id} className={cn("flex items-center justify-between gap-1 rounded bg-background px-1", colorLocal(t.persona_id))}>
                                   <span>{alias(t.persona_id)}</span>
                                   {!cerrada && <button aria-label={`Quitar a ${alias(t.persona_id)}`} onClick={() => quitar(t.id)} className="text-muted-foreground hover:text-peligro">×</button>}
                                 </li>
@@ -197,6 +202,9 @@ function Planificador() {
         </table>
       </div>
       <p className="flex flex-wrap gap-4 text-xs text-muted-foreground">
+        <span><span className="mr-1 inline-block h-3 w-1 bg-tienda align-middle" />Tienda</span>
+        <span><span className="mr-1 inline-block h-3 w-1 bg-winebar align-middle" />Wine Bar</span>
+        <span><span className="mr-1 inline-block h-3 w-1 bg-tienda align-middle" /><span className="mr-1 inline-block h-3 w-1 bg-winebar align-middle" />Ambos locales</span>
         <span><span className="mr-1 inline-block h-3 w-3 rounded-sm border-2 border-ok bg-ok/10 align-middle" />Cobertura completa</span>
         <span><span className="mr-1 inline-block h-3 w-3 rounded-sm border-2 border-peligro bg-peligro/10 align-middle" />Bajo cobertura mínima</span>
         <span><span className="mr-1 inline-block h-1.5 w-3 rounded-sm bg-peligro align-middle" />Día de descanso faltante</span>
