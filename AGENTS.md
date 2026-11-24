@@ -28,3 +28,8 @@ use the editor.
   own key and store it in Secrets.
 - **Secrets.** Lovable manages them. Do not put secret values in the repo.
 <!-- LOVABLE:END -->
+
+## Project rules
+- All schedule writes (assign, remove, close week, requests, adjustments, reset) go through the SQL function `ejecutar_comando`; it is the only place enforcing idempotency, revision checks, locking and validation, so the UI never writes turnos directly.
+- Cost calculation lives in SQL (`_costos_semana`), used both for freezing on week close and for the cost panel, so the CSV and panel reconcile.
+- Demo sign-in uses fixed demo accounts created on demand by a server function; team identity maps to `persona` by email.

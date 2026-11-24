@@ -117,7 +117,7 @@ function Estado({ e }: { e: string }) {
 }
 
 function Intercambio({ abierto, cerrar, turnos, semana, personas, onListo }: {
-  abierto: boolean; cerrar: () => void; turnos: EventoTurno[]; semana?: string; personas: { id: string; alias: string }[]; onListo: () => void;
+  abierto: boolean; cerrar: () => void; turnos: EventoTurno[]; semana: string | undefined; personas: { id: string; alias: string }[]; onListo: () => void;
 }) {
   const [personaB, setPersonaB] = useState("");
   const susTurnos = useQuery({

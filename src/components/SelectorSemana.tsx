@@ -6,7 +6,7 @@ export function etiquetaSemana(id: string) {
   return `${fmt(id)} – ${fmt(addDias(id, 6))}`;
 }
 
-export function SelectorSemana({ semanas, valor, onCambio }: { semanas: Semana[]; valor?: string; onCambio: (v: string) => void }) {
+export function SelectorSemana({ semanas, valor, onCambio }: { semanas: Semana[]; valor: string | undefined; onCambio: (v: string) => void }) {
   return (
     <label className="flex items-center gap-2 text-sm">
       <span className="text-muted-foreground">Semana</span>
