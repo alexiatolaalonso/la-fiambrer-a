@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SelectorSemana } from "@/components/SelectorSemana";
 import { supabase } from "@/integrations/supabase/client";
-import { ejecutar, semanaPorDefecto, useCatalogo, useRefrescar, useSemana, useSesion } from "@/lib/datos";
+import { ejecutar, semanaPorDefecto, useCatalogo, useRefrescar, useSemana, useSesion, type Persona } from "@/lib/datos";
+import { HabilidadesIconos } from "@/components/HabilidadesIconos";
 import { DIAS, hhmm, mxn } from "@/lib/reglas";
 
 export const Route = createFileRoute("/_authenticated/configuracion")({
@@ -183,58 +184,74 @@ function Franjas() {
 const lista = (v: string) => v.split(",").map((x) => x.trim()).filter(Boolean);
 const colorLocal = (id: string) => id === "tienda" ? "bg-tienda" : id === "winebar" ? "bg-winebar" : "bg-muted-foreground";
 
+type Local = { id: string; nombre: string };
+
+const datos = (f: FormData, locales: Local[]) => ({
+  alias: String(f.get("alias") ?? "").trim(),
+  email: String(f.get("email") ?? "").trim(),
+  locales: locales.filter((l) => f.get(`l_${l.id}`)).map((l) => l.id),
+  habilidades: lista(String(f.get("hab") ?? "")),
+  tope_semanal: Number(f.get("tope")),
+});
+
+const Locales = ({ locales, sel, admin }: { locales: Local[]; sel: string[]; admin: boolean }) => (
+  <div className="flex gap-2">{locales.map((l) => (
+    <label key={l.id} className="flex items-center gap-1 text-xs">
+      <input type="checkbox" name={`l_${l.id}`} defaultChecked={sel.includes(l.id)} disabled={!admin} />
+      <span className={`inline-block h-2 w-2 rounded-full ${colorLocal(l.id)}`} />{l.nombre}
+    </label>
+  ))}</div>
+);
+
+function FilaPersonal({ p, admin, locales, guardar }: {
+  p: Persona; admin: boolean; locales: Local[]; guardar: ReturnType<typeof useGuardar>;
+}) {
+  const [hab, setHab] = useState(p.habilidades.join(", "));
+  return (
+    <form className="flex flex-wrap items-center gap-2 border-b border-border pb-2" onSubmit={(e) => { e.preventDefault(); guardar(supabase.from("persona").update(datos(new FormData(e.currentTarget), locales)).eq("id", p.id)); }}>
+      <input name="alias" defaultValue={p.alias} disabled={!admin} className={`${input} w-32`} aria-label="Alias" />
+      <span className="flex w-9 shrink-0 justify-center"><HabilidadesIconos habilidades={lista(hab)} /></span>
+      <input name="email" type="email" defaultValue={p.email} disabled={!admin} className={`${input} w-52`} aria-label="Email" />
+      <Locales locales={locales} sel={p.locales} admin={admin} />
+      <input name="hab" value={hab} onChange={(e) => setHab(e.target.value)} disabled={!admin} placeholder="Habilidades (separadas por comas)" className={`${input} flex-1 min-w-48`} aria-label="Habilidades" />
+      <input name="tope" type="number" min="0" defaultValue={p.tope_semanal} disabled={!admin} className={`${input} w-20`} aria-label="Tope semanal" title="Tope semanal (h)" />
+      {admin && <>
+        <Button type="submit" variant="outline">Guardar</Button>
+        <Button type="button" variant="ghost" onClick={() => confirm(`¿Borrar a ${p.alias}?`) && guardar(supabase.from("persona").delete().eq("id", p.id), "Borrado")}>Borrar</Button>
+      </>}
+    </form>
+  );
+}
+
 function Personal() {
   const cat = useCatalogo();
   const ses = useSesion();
   const guardar = useGuardar();
   const refrescar = useRefrescar();
+  const [nuevaHab, setNuevaHab] = useState("");
   if (!cat.data) return null;
   const { personas, locales, parametros } = cat.data;
   const admin = ses.data?.rol === "admin";
-  const datos = (f: FormData) => ({
-    alias: String(f.get("alias") ?? "").trim(),
-    email: String(f.get("email") ?? "").trim(),
-    locales: locales.filter((l) => f.get(`l_${l.id}`)).map((l) => l.id),
-    habilidades: lista(String(f.get("hab") ?? "")),
-    tope_semanal: Number(f.get("tope")),
-  });
-  const Locales = ({ sel }: { sel: string[] }) => (
-    <div className="flex gap-2">{locales.map((l) => (
-      <label key={l.id} className="flex items-center gap-1 text-xs">
-        <input type="checkbox" name={`l_${l.id}`} defaultChecked={sel.includes(l.id)} disabled={!admin} />
-        <span className={`inline-block h-2 w-2 rounded-full ${colorLocal(l.id)}`} />{l.nombre}
-      </label>
-    ))}</div>
-  );
   return (
     <div className="pizarra space-y-2 p-3">
       {!admin && <p className="text-sm text-muted-foreground">Solo administración puede editar al personal.</p>}
       {personas.filter((p) => p.email).map((p) => (
-        <form key={p.id} className="flex flex-wrap items-center gap-2 border-b border-border pb-2" onSubmit={(e) => { e.preventDefault(); guardar(supabase.from("persona").update(datos(new FormData(e.currentTarget))).eq("id", p.id)); }}>
-          <input name="alias" defaultValue={p.alias} disabled={!admin} className={`${input} w-32`} aria-label="Alias" />
-          <input name="email" type="email" defaultValue={p.email} disabled={!admin} className={`${input} w-52`} aria-label="Email" />
-          <Locales sel={p.locales} />
-          <input name="hab" defaultValue={p.habilidades.join(", ")} disabled={!admin} placeholder="Habilidades (separadas por comas)" className={`${input} flex-1 min-w-48`} aria-label="Habilidades" />
-          <input name="tope" type="number" min="0" defaultValue={p.tope_semanal} disabled={!admin} className={`${input} w-20`} aria-label="Tope semanal" title="Tope semanal (h)" />
-          {admin && <>
-            <Button type="submit" variant="outline">Guardar</Button>
-            <Button type="button" variant="ghost" onClick={() => confirm(`¿Borrar a ${p.alias}?`) && guardar(supabase.from("persona").delete().eq("id", p.id), "Borrado")}>Borrar</Button>
-          </>}
-        </form>
+        <FilaPersonal key={p.id} p={p} admin={admin} locales={locales} guardar={guardar} />
       ))}
       {admin && (
         <form className="flex flex-wrap items-center gap-2 pt-2" onSubmit={async (e) => {
-          e.preventDefault(); const form = e.currentTarget; const f = new FormData(form); const id = String(f.get("id")).trim(); const d = datos(f);
+          e.preventDefault(); const form = e.currentTarget; const f = new FormData(form); const id = String(f.get("id")).trim(); const d = datos(f, locales);
           if (!d.locales.length) { toast.error("Marca al menos un local para poder asignarle turnos."); return; }
           const { error } = await supabase.from("persona").insert({ id, ...d });
           if (error) { toast.error(error.code === "23505" ? "Ya existe una persona con esa clave." : error.message); return; }
-          form.reset(); toast.success(`${d.alias} agregada al equipo y al planificador`); refrescar();
+          form.reset(); setNuevaHab(""); toast.success(`${d.alias} agregada al equipo y al planificador`); refrescar();
         }}>
           <input name="id" required placeholder="clave (ej. ana)" pattern="[a-z0-9\-]+" className={`${input} w-28`} />
           <input name="alias" required placeholder="Alias" className={`${input} w-32`} />
           <input name="email" type="email" required placeholder="Email" className={`${input} w-52`} />
-          <Locales sel={[]} />
-          <input name="hab" placeholder="Habilidades (separadas por comas)" className={`${input} flex-1 min-w-48`} />
+          <Locales locales={locales} sel={[]} admin />
+          <input name="hab" value={nuevaHab} onChange={(e) => setNuevaHab(e.target.value)} placeholder="Habilidades (separadas por comas)" className={`${input} flex-1 min-w-48`} />
+          <span className="flex w-9 shrink-0 justify-center"><HabilidadesIconos habilidades={lista(nuevaHab)} /></span>
           <input name="tope" type="number" min="0" defaultValue={parametros?.tope_semanal_default ?? 40} className={`${input} w-20`} title="Tope semanal (h)" />
           <Button type="submit">Agregar persona</Button>
         </form>

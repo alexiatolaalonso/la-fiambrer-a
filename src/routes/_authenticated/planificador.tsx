@@ -6,7 +6,7 @@ import { SelectorSemana } from "@/components/SelectorSemana";
 import { ejecutar, semanaPorDefecto, useCatalogo, useRefrescar, useSemana, type Franja } from "@/lib/datos";
 import { DIAS, addDias, diasDescansoFaltante, estadoCobertura, hhmm, horasFranja } from "@/lib/reglas";
 import { cn } from "@/lib/utils";
-import { ChefHat, Grape } from "lucide-react";
+import { HabilidadesIconos } from "@/components/HabilidadesIconos";
 
 export const Route = createFileRoute("/_authenticated/planificador")({
   head: () => ({ meta: [{ title: "Planificador semanal — La Fiambrería" }, { name: "description", content: "Asigna personas a franjas con validación de descanso, disponibilidad y habilidades." }, { property: "og:title", content: "Planificador semanal — La Fiambrería" }, { property: "og:description", content: "Grilla semanal de turnos." }] }),
@@ -133,8 +133,7 @@ function Planificador() {
               >
                 <span aria-hidden className={cn("absolute inset-x-0 top-0 h-1.5", { tienda: "bg-tienda", winebar: "bg-winebar", ambos: "bg-gradient-to-r from-tienda from-50% to-winebar to-50%" }[tipoLocal(p.id) ?? "tienda"])} />
                 <span className="font-semibold">{p.alias}</span>
-                {p.habilidades.includes("Cocina") && <ChefHat aria-label="Cocina" className="ml-1 inline h-3.5 w-3.5 align-[-2px]" />}
-                {p.habilidades.some((h) => h.toLowerCase().includes("vino")) && <Grape aria-label="Sumiller" className="ml-1 inline h-3.5 w-3.5 align-[-2px]" />}
+                <HabilidadesIconos habilidades={p.habilidades} className="ml-1 align-[-2px]" iconClass="text-inherit" />
                 <span className={cn("ml-1 text-[10px] font-semibold", elegida === p.id ? "" : tipoLocal(p.id) === "winebar" ? "text-winebar" : "text-tienda")}>{{ tienda: "Tienda", winebar: "Wine Bar", ambos: "Ambos" }[tipoLocal(p.id) ?? "tienda"]}</span>
                 <span className={cn("ml-1 text-xs", horas > Number(p.tope_semanal) ? "text-alerta font-bold" : "opacity-70")}>{horas}h/{Number(p.tope_semanal)}</span>
                 <span className="mt-1 flex gap-0.5" aria-label={`Días trabajados de ${p.alias}`}>
