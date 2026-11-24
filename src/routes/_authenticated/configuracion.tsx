@@ -97,7 +97,7 @@ function Configuracion() {
             </form>
           ))}
           <form className="flex gap-2 border-t border-border pt-2" onSubmit={(e) => { const g = fd(e); guardar(supabase.from("local").insert({ id: g("id"), nombre: g("n") })); }}>
-            <input name="id" required placeholder="clave (ej. roma)" pattern="[a-z0-9-]+" className={input} />
+            <input name="id" required placeholder="clave (ej. roma)" pattern="[a-z0-9\-]+" className={input} />
             <input name="n" required placeholder="Nombre" className={`${input} flex-1`} />
             <Button type="submit">Agregar local</Button>
           </form>
@@ -113,7 +113,7 @@ function Configuracion() {
             </form>
           ))}
           <form className="flex flex-wrap gap-2 border-t border-border pt-2" onSubmit={(e) => { const g = fd(e); guardar(supabase.from("puesto").insert({ id: g("id"), nombre: g("n"), habilidad_requerida: g("h") || null })); }}>
-            <input name="id" required placeholder="clave" pattern="[a-z0-9-]+" className={input} />
+            <input name="id" required placeholder="clave" pattern="[a-z0-9\-]+" className={input} />
             <input name="n" required placeholder="Nombre" className={input} />
             <input name="h" placeholder="Habilidad requerida" className={`${input} flex-1`} />
             <Button type="submit">Agregar puesto</Button>
@@ -187,6 +187,7 @@ function Personal() {
   const cat = useCatalogo();
   const ses = useSesion();
   const guardar = useGuardar();
+  const refrescar = useRefrescar();
   if (!cat.data) return null;
   const { personas, locales, parametros } = cat.data;
   const admin = ses.data?.rol === "admin";
@@ -222,8 +223,14 @@ function Personal() {
         </form>
       ))}
       {admin && (
-        <form className="flex flex-wrap items-center gap-2 pt-2" onSubmit={(e) => { e.preventDefault(); const f = new FormData(e.currentTarget); const id = String(f.get("id")).trim(); e.currentTarget.reset(); guardar(supabase.from("persona").insert({ id, ...datos(f) }), "Persona agregada"); }}>
-          <input name="id" required placeholder="clave (ej. ana)" pattern="[a-z0-9-]+" className={`${input} w-28`} />
+        <form className="flex flex-wrap items-center gap-2 pt-2" onSubmit={async (e) => {
+          e.preventDefault(); const form = e.currentTarget; const f = new FormData(form); const id = String(f.get("id")).trim(); const d = datos(f);
+          if (!d.locales.length) { toast.error("Marca al menos un local para poder asignarle turnos."); return; }
+          const { error } = await supabase.from("persona").insert({ id, ...d });
+          if (error) { toast.error(error.code === "23505" ? "Ya existe una persona con esa clave." : error.message); return; }
+          form.reset(); toast.success(`${d.alias} agregada al equipo y al planificador`); refrescar();
+        }}>
+          <input name="id" required placeholder="clave (ej. ana)" pattern="[a-z0-9\-]+" className={`${input} w-28`} />
           <input name="alias" required placeholder="Alias" className={`${input} w-32`} />
           <input name="email" type="email" required placeholder="Email" className={`${input} w-52`} />
           <Locales sel={[]} />
