@@ -106,7 +106,7 @@ function MisTurnos() {
         </DialogContent>
       </Dialog>
 
-      <Intercambio abierto={dialogo === "intercambio"} cerrar={() => setDialogo(null)} turnos={eventos} semana={semanaAbierta} personas={(cat.data?.personas ?? []).filter((p) => p.id !== yo.id)} onListo={refrescar} />
+      <Intercambio abierto={dialogo === "intercambio"} cerrar={() => setDialogo(null)} turnos={eventos} semana={semanaAbierta} onListo={refrescar} />
     </div>
   );
 }
@@ -116,14 +116,21 @@ function Estado({ e }: { e: string }) {
   return <span className={`font-semibold ${c}`}>{e}</span>;
 }
 
-function Intercambio({ abierto, cerrar, turnos, semana, personas, onListo }: {
-  abierto: boolean; cerrar: () => void; turnos: EventoTurno[]; semana: string | undefined; personas: { id: string; alias: string }[]; onListo: () => void;
+function Intercambio({ abierto, cerrar, turnos, semana, onListo }: {
+  abierto: boolean; cerrar: () => void; turnos: EventoTurno[]; semana: string | undefined; onListo: () => void;
 }) {
+  const [turnoA, setTurnoA] = useState("");
   const [personaB, setPersonaB] = useState("");
+  const miTurno = turnoA || turnos[0]?.id || "";
+  const personas = useQuery({
+    queryKey: ["companeros", miTurno],
+    enabled: !!miTurno && abierto,
+    queryFn: async () => (await supabase.rpc("companeros_intercambio", { _turno: miTurno })).data ?? [],
+  });
   const susTurnos = useQuery({
-    queryKey: ["intercambiables", personaB],
-    enabled: !!personaB,
-    queryFn: async () => (await supabase.rpc("turnos_intercambiables", { _persona: personaB })).data ?? [],
+    queryKey: ["intercambiables", personaB, miTurno],
+    enabled: !!personaB && !!miTurno,
+    queryFn: async () => (await supabase.rpc("turnos_intercambiables_compatibles", { _persona: personaB, _turno_ref: miTurno })).data ?? [],
   });
   return (
     <Dialog open={abierto} onOpenChange={(o) => !o && cerrar()}>
@@ -138,8 +145,10 @@ function Intercambio({ abierto, cerrar, turnos, semana, personas, onListo }: {
           } catch (err) { toast.error((err as Error).message); }
           onListo();
         }}>
-          <label className="block text-sm">Mi turno<select required name="turno_a" className="mt-1 h-9 w-full rounded border border-input bg-card px-2">{turnos.map((t) => <option key={t.id} value={t.id}>{t.fecha} {hhmm(t.inicio)} {t.titulo}</option>)}</select></label>
-          <label className="block text-sm">Con<select required value={personaB} onChange={(e) => setPersonaB(e.target.value)} className="mt-1 h-9 w-full rounded border border-input bg-card px-2"><option value="">Elige…</option>{personas.map((p) => <option key={p.id} value={p.id}>{p.alias}</option>)}</select></label>
+          <label className="block text-sm">Mi turno<select required name="turno_a" value={miTurno} onChange={(e) => { setTurnoA(e.target.value); setPersonaB(""); }} className="mt-1 h-9 w-full rounded border border-input bg-card px-2">{turnos.map((t) => <option key={t.id} value={t.id}>{t.fecha} {hhmm(t.inicio)} {t.titulo}</option>)}</select></label>
+          <label className="block text-sm">Con<select required value={personaB} onChange={(e) => setPersonaB(e.target.value)} className="mt-1 h-9 w-full rounded border border-input bg-card px-2"><option value="">Elige…</option>{(personas.data ?? []).map((p) => <option key={p.id} value={p.id}>{p.alias}</option>)}</select></label>
+          <p className="text-xs text-muted-foreground">Solo con compañeros del mismo local (o de ambos) y la misma posición.</p>
+          {personas.isSuccess && personas.data.length === 0 && <p className="text-sm text-peligro">Nadie más trabaja en el local de este turno.</p>}
           {personaB && (
             <label className="block text-sm">Su turno (opcional; vacío = te cubre)<select name="turno_b" className="mt-1 h-9 w-full rounded border border-input bg-card px-2"><option value="">— Solo me cubre —</option>{(susTurnos.data ?? []).map((t) => <option key={t.turno_id} value={t.turno_id}>{t.fecha} {hhmm(t.inicio)} {t.puesto} · {t.local}</option>)}</select></label>
           )}

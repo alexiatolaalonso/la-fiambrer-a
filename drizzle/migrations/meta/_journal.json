@@ -15,6 +15,13 @@
       "when": 1795548546775,
       "tag": "0001_restringir_lectura_persona_parametros",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1795549094887,
+      "tag": "0002_intercambio_mismo_local_puesto",
+      "breakpoints": true
     }
   ]
 }

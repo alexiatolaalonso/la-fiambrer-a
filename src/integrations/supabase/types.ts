@@ -561,6 +561,13 @@ export type Database = {
         }
         Returns: undefined
       }
+      companeros_intercambio: {
+        Args: { _turno: string }
+        Returns: {
+          alias: string
+          id: string
+        }[]
+      }
       costos_semana: {
         Args: { _semana: string }
         Returns: {
@@ -609,6 +616,17 @@ export type Database = {
       }
       turnos_intercambiables: {
         Args: { _persona: string }
+        Returns: {
+          fecha: string
+          fin: string
+          inicio: string
+          local: string
+          puesto: string
+          turno_id: string
+        }[]
+      }
+      turnos_intercambiables_compatibles: {
+        Args: { _persona: string; _turno_ref: string }
         Returns: {
           fecha: string
           fin: string
