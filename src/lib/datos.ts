@@ -42,8 +42,16 @@ export function useCatalogo() {
         supabase.from("tarifa").select("*").order("vigente_desde", { ascending: false }),
         supabase.from("semana").select("*").order("id", { ascending: false }),
       ]);
+      // El equipo solo ve su propia ficha completa; el resto llega como alias sin email.
+      const completas = ok(personas);
+      const alias = ok(await supabase.rpc("equipo_alias"));
+      const todas: Persona[] = [
+        ...completas,
+        ...alias.filter((a) => !completas.some((c) => c.id === a.id))
+          .map((a) => ({ id: a.id, alias: a.alias, email: "", locales: [], habilidades: [], tope_semanal: 0 })),
+      ].sort((a, b) => a.alias.localeCompare(b.alias));
       return {
-        locales: ok(locales), puestos: ok(puestos), personas: ok(personas), parametros: ok(parametros),
+        locales: ok(locales), puestos: ok(puestos), personas: todas, parametros: ok(parametros),
         noDisp: ok(noDisp), tarifas: ok(tarifas), semanas: ok(semanas),
       };
     },

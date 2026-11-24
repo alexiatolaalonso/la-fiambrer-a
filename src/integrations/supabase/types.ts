@@ -586,6 +586,13 @@ export type Database = {
         Args: { _datos: Json; _id: string; _tipo: string }
         Returns: Json
       }
+      equipo_alias: {
+        Args: never
+        Returns: {
+          alias: string
+          id: string
+        }[]
+      }
       es_staff: { Args: never; Returns: boolean }
       has_role: {
         Args: {
