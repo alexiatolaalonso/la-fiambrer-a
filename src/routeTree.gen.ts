@@ -10,33 +10,108 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
+import { Route as AuthenticatedConfiguracionRouteImport } from './routes/_authenticated/configuracion'
+import { Route as AuthenticatedCostosRouteImport } from './routes/_authenticated/costos'
+import { Route as AuthenticatedMisTurnosRouteImport } from './routes/_authenticated/mis-turnos'
+import { Route as AuthenticatedPlanificadorRouteImport } from './routes/_authenticated/planificador'
+import { Route as AuthenticatedSolicitudesRouteImport } from './routes/_authenticated/solicitudes'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
+  id: '/_authenticated',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedConfiguracionRoute =
+  AuthenticatedConfiguracionRouteImport.update({
+    id: '/configuracion',
+    path: '/configuracion',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedCostosRoute = AuthenticatedCostosRouteImport.update({
+  id: '/costos',
+  path: '/costos',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedMisTurnosRoute = AuthenticatedMisTurnosRouteImport.update({
+  id: '/mis-turnos',
+  path: '/mis-turnos',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedPlanificadorRoute =
+  AuthenticatedPlanificadorRouteImport.update({
+    id: '/planificador',
+    path: '/planificador',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedSolicitudesRoute =
+  AuthenticatedSolicitudesRouteImport.update({
+    id: '/solicitudes',
+    path: '/solicitudes',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/configuracion': typeof AuthenticatedConfiguracionRoute
+  '/costos': typeof AuthenticatedCostosRoute
+  '/mis-turnos': typeof AuthenticatedMisTurnosRoute
+  '/planificador': typeof AuthenticatedPlanificadorRoute
+  '/solicitudes': typeof AuthenticatedSolicitudesRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/configuracion': typeof AuthenticatedConfiguracionRoute
+  '/costos': typeof AuthenticatedCostosRoute
+  '/mis-turnos': typeof AuthenticatedMisTurnosRoute
+  '/planificador': typeof AuthenticatedPlanificadorRoute
+  '/solicitudes': typeof AuthenticatedSolicitudesRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
+  '/_authenticated/configuracion': typeof AuthenticatedConfiguracionRoute
+  '/_authenticated/costos': typeof AuthenticatedCostosRoute
+  '/_authenticated/mis-turnos': typeof AuthenticatedMisTurnosRoute
+  '/_authenticated/planificador': typeof AuthenticatedPlanificadorRoute
+  '/_authenticated/solicitudes': typeof AuthenticatedSolicitudesRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/configuracion'
+    | '/costos'
+    | '/mis-turnos'
+    | '/planificador'
+    | '/solicitudes'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/configuracion'
+    | '/costos'
+    | '/mis-turnos'
+    | '/planificador'
+    | '/solicitudes'
+  id:
+    | '__root__'
+    | '/'
+    | '/_authenticated'
+    | '/_authenticated/configuracion'
+    | '/_authenticated/costos'
+    | '/_authenticated/mis-turnos'
+    | '/_authenticated/planificador'
+    | '/_authenticated/solicitudes'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
@@ -48,11 +123,73 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated': {
+      id: '/_authenticated'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthenticatedRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/configuracion': {
+      id: '/_authenticated/configuracion'
+      path: '/configuracion'
+      fullPath: '/configuracion'
+      preLoaderRoute: typeof AuthenticatedConfiguracionRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/costos': {
+      id: '/_authenticated/costos'
+      path: '/costos'
+      fullPath: '/costos'
+      preLoaderRoute: typeof AuthenticatedCostosRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/mis-turnos': {
+      id: '/_authenticated/mis-turnos'
+      path: '/mis-turnos'
+      fullPath: '/mis-turnos'
+      preLoaderRoute: typeof AuthenticatedMisTurnosRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/planificador': {
+      id: '/_authenticated/planificador'
+      path: '/planificador'
+      fullPath: '/planificador'
+      preLoaderRoute: typeof AuthenticatedPlanificadorRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/solicitudes': {
+      id: '/_authenticated/solicitudes'
+      path: '/solicitudes'
+      fullPath: '/solicitudes'
+      preLoaderRoute: typeof AuthenticatedSolicitudesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
+interface AuthenticatedRouteRouteChildren {
+  AuthenticatedConfiguracionRoute: typeof AuthenticatedConfiguracionRoute
+  AuthenticatedCostosRoute: typeof AuthenticatedCostosRoute
+  AuthenticatedMisTurnosRoute: typeof AuthenticatedMisTurnosRoute
+  AuthenticatedPlanificadorRoute: typeof AuthenticatedPlanificadorRoute
+  AuthenticatedSolicitudesRoute: typeof AuthenticatedSolicitudesRoute
+}
+
+const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedConfiguracionRoute: AuthenticatedConfiguracionRoute,
+  AuthenticatedCostosRoute: AuthenticatedCostosRoute,
+  AuthenticatedMisTurnosRoute: AuthenticatedMisTurnosRoute,
+  AuthenticatedPlanificadorRoute: AuthenticatedPlanificadorRoute,
+  AuthenticatedSolicitudesRoute: AuthenticatedSolicitudesRoute,
+}
+
+const AuthenticatedRouteRouteWithChildren =
+  AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
