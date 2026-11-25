@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { ejecutar, useCatalogo, useRefrescar } from "@/lib/datos";
-import { DIAS_LARGOS, hhmm } from "@/lib/reglas";
+import { DIAS_LARGOS, etiquetaAusencia, hhmm } from "@/lib/reglas";
 
 export const Route = createFileRoute("/_authenticated/solicitudes")({
   head: () => ({ meta: [{ title: "Solicitudes — La Fiambrería" }, { name: "description", content: "Aprueba o rechaza ausencias e intercambios de turno." }, { property: "og:title", content: "Solicitudes — La Fiambrería" }, { property: "og:description", content: "Ausencias e intercambios." }] }),
@@ -56,7 +56,7 @@ function Solicitudes() {
         {pendA.length === 0 ? <p className="text-sm text-muted-foreground">Nada pendiente.</p> : pendA.map((a) => (
           <div key={a.id} className="flex flex-wrap items-center gap-2 border-t border-border py-2 first:border-0">
             <span className="font-semibold">{ali(a.persona_id)}</span>
-            <span>{DIAS_LARGOS[a.dia]} · semana {a.semana_id}</span>
+            <span>{etiquetaAusencia(a.semana_id, a.dia, a.franja)}</span>
             <span className="text-sm text-muted-foreground">{a.motivo}</span>
             <span className="ml-auto flex gap-2">
               <Button size="sm" onClick={() => resolver("resolver_ausencia", "ausencia", a.id, a.semana_id, true)}>Aprobar</Button>
@@ -83,7 +83,7 @@ function Solicitudes() {
       <section className="pizarra p-3">
         <h2 className="text-2xl">Historial</h2>
         <ul className="mt-2 space-y-1 text-sm">
-          {q.data!.ausencias.filter((a) => a.estado !== "pendiente").map((a) => <li key={a.id}>Ausencia {ali(a.persona_id)} {DIAS_LARGOS[a.dia]} — {a.estado}</li>)}
+          {q.data!.ausencias.filter((a) => a.estado !== "pendiente").map((a) => <li key={a.id}>Ausencia {ali(a.persona_id)} {etiquetaAusencia(a.semana_id, a.dia, a.franja)} — {a.estado}</li>)}
           {q.data!.intercambios.filter((i) => i.estado !== "pendiente").map((i) => <li key={i.id}>Intercambio {ali(i.persona_a)} → {ali(i.persona_b)} — {i.estado}</li>)}
         </ul>
       </section>

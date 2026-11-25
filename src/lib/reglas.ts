@@ -118,3 +118,23 @@ export function descargar(nombre: string, contenido: string, tipo: string) {
   a.href = url; a.download = nombre; a.click();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
+
+export type FranjaAusencia = "manana" | "tarde" | "completo";
+export const FRANJAS_AUSENCIA: { valor: FranjaAusencia; etiqueta: string }[] = [
+  { valor: "manana", etiqueta: "Mañana" },
+  { valor: "tarde", etiqueta: "Tarde" },
+  { valor: "completo", etiqueta: "Día completo" },
+];
+/** Corte mañana/tarde: un turno que empieza antes de las 16:00 es de mañana. */
+export function franjaDeHora(inicio: string): "manana" | "tarde" {
+  return inicio.slice(0, 5) < "16:00" ? "manana" : "tarde";
+}
+export function ausenciaCubre(franja: string, inicio: string): boolean {
+  return franja === "completo" || franjaDeHora(inicio) === franja;
+}
+/** «Jue 26 nov · Tarde» a partir de la semana (lunes ISO), el día 0–6 y la franja. */
+export function etiquetaAusencia(semanaId: string, dia: number, franja: string): string {
+  const f = new Date(addDias(semanaId, dia) + "T12:00:00").toLocaleDateString("es-MX", { weekday: "short", day: "numeric", month: "short" });
+  const e = FRANJAS_AUSENCIA.find((x) => x.valor === franja)?.etiqueta ?? "Día completo";
+  return `${f.charAt(0).toUpperCase()}${f.slice(1)} · ${e}`;
+}

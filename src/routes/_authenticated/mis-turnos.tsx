@@ -6,7 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { ejecutar, semanaPorDefecto, useCatalogo, useRefrescar, useSesion } from "@/lib/datos";
-import { DIAS_LARGOS, construirIcs, descargar, hhmm, textoTurnos, type EventoTurno } from "@/lib/reglas";
+import { Calendar } from "@/components/ui/calendar";
+import { es } from "date-fns/locale";
+import { DIAS_LARGOS, FRANJAS_AUSENCIA, addDias, etiquetaAusencia, type FranjaAusencia, construirIcs, descargar, hhmm, textoTurnos, type EventoTurno } from "@/lib/reglas";
 
 export const Route = createFileRoute("/_authenticated/mis-turnos")({
   head: () => ({ meta: [{ title: "Mis turnos — La Fiambrería" }, { name: "description", content: "Tus turnos de la semana, ausencias e intercambios." }, { property: "og:title", content: "Mis turnos — La Fiambrería" }, { property: "og:description", content: "Turnos personales." }] }),
@@ -78,7 +80,7 @@ function MisTurnos() {
         <div className="pizarra p-3">
           <h2 className="text-2xl">Mis ausencias</h2>
           {(q.data?.ausencias ?? []).length === 0 ? <p className="text-sm text-muted-foreground">Ninguna.</p> : (
-            <ul className="mt-2 space-y-1 text-sm">{q.data!.ausencias.map((a) => <li key={a.id}>{DIAS_LARGOS[a.dia]} ({a.semana_id}) · {a.motivo || "sin motivo"} — <Estado e={a.estado} /></li>)}</ul>
+            <ul className="mt-2 space-y-1 text-sm">{q.data!.ausencias.map((a) => <li key={a.id}>{etiquetaAusencia(a.semana_id, a.dia, a.franja)} · {a.motivo || "sin motivo"} — <Estado e={a.estado} /></li>)}</ul>
           )}
         </div>
         <div className="pizarra p-3">
@@ -89,22 +91,7 @@ function MisTurnos() {
         </div>
       </section>
 
-      <Dialog open={dialogo === "ausencia"} onOpenChange={(o) => !o && setDialogo(null)}>
-        <DialogContent>
-          <DialogHeader><DialogTitle>Pedir ausencia</DialogTitle></DialogHeader>
-          <form className="space-y-3" onSubmit={async (e) => {
-            e.preventDefault();
-            const fd = new FormData(e.currentTarget);
-            try { await ejecutar("pedir_ausencia", { semana: semanaAbierta, dia: String(fd.get("dia")), motivo: String(fd.get("motivo") ?? "") }); toast.success("Solicitud enviada"); setDialogo(null); }
-            catch (err) { toast.error((err as Error).message); }
-            refrescar();
-          }}>
-            <label className="block text-sm">Día<select name="dia" className="mt-1 h-9 w-full rounded border border-input bg-card px-2">{DIAS_LARGOS.map((d, i) => <option key={d} value={i}>{d}</option>)}</select></label>
-            <label className="block text-sm">Motivo<input name="motivo" maxLength={300} className="mt-1 h-9 w-full rounded border border-input bg-card px-2" /></label>
-            <Button type="submit">Enviar</Button>
-          </form>
-        </DialogContent>
-      </Dialog>
+      <PedirAusencia abierto={dialogo === "ausencia"} cerrar={() => setDialogo(null)} semana={semanaAbierta} onListo={refrescar} />
 
       <Intercambio abierto={dialogo === "intercambio"} cerrar={() => setDialogo(null)} turnos={eventos} semana={semanaAbierta} onListo={refrescar} />
     </div>
@@ -154,6 +141,46 @@ function Intercambio({ abierto, cerrar, turnos, semana, onListo }: {
           )}
           <label className="block text-sm">Nota<input name="nota" maxLength={300} className="mt-1 h-9 w-full rounded border border-input bg-card px-2" /></label>
           <Button type="submit" disabled={!turnos.length}>Enviar propuesta</Button>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function PedirAusencia({ abierto, cerrar, semana, onListo }: { abierto: boolean; cerrar: () => void; semana: string | undefined; onListo: () => void }) {
+  const [fecha, setFecha] = useState<Date | undefined>();
+  const [franja, setFranja] = useState<FranjaAusencia>("completo");
+  const lunes = semana ? new Date(semana + "T00:00:00") : undefined;
+  const domingo = semana ? new Date(addDias(semana, 6) + "T23:59:59") : undefined;
+  return (
+    <Dialog open={abierto} onOpenChange={(o) => !o && cerrar()}>
+      <DialogContent>
+        <DialogHeader><DialogTitle>Pedir ausencia</DialogTitle></DialogHeader>
+        <form className="space-y-3" onSubmit={async (e) => {
+          e.preventDefault();
+          if (!fecha || !semana) { toast.error("Elige un día en el calendario"); return; }
+          const dia = (fecha.getDay() + 6) % 7;
+          const fd = new FormData(e.currentTarget);
+          try { await ejecutar("pedir_ausencia", { semana, dia: String(dia), franja, motivo: String(fd.get("motivo") ?? "") }); toast.success("Solicitud enviada"); setFecha(undefined); setFranja("completo"); cerrar(); }
+          catch (err) { toast.error((err as Error).message); }
+          onListo();
+        }}>
+          <div className="flex justify-center rounded border border-input bg-card">
+            <Calendar mode="single" locale={es} weekStartsOn={1} selected={fecha} onSelect={setFecha}
+              defaultMonth={lunes ?? new Date()} disabled={lunes && domingo ? [{ before: lunes }, { after: domingo }] : true}
+              className="p-3 pointer-events-auto" />
+          </div>
+          <div className="text-sm">
+            <span className="block">Parte del día</span>
+            <div className="mt-1 grid grid-cols-3 gap-2">
+              {FRANJAS_AUSENCIA.map((o) => (
+                <Button key={o.valor} type="button" variant={franja === o.valor ? "default" : "outline"} onClick={() => setFranja(o.valor)}>{o.etiqueta}</Button>
+              ))}
+            </div>
+            <p className="mt-1 text-xs text-muted-foreground">Mañana: turnos que empiezan antes de las 16:00. Tarde: desde las 16:00.</p>
+          </div>
+          <label className="block text-sm">Motivo<input name="motivo" maxLength={300} className="mt-1 h-9 w-full rounded border border-input bg-card px-2" /></label>
+          <Button type="submit" disabled={!fecha}>Enviar</Button>
         </form>
       </DialogContent>
     </Dialog>

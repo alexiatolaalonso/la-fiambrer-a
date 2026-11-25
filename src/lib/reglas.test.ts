@@ -29,3 +29,11 @@ describe("reglas de turnos", () => {
     expect(ics).toContain("DTEND;TZID=America/Mexico_City:20261130T010000");
   });
 });
+
+import { ausenciaCubre, franjaDeHora } from "./reglas";
+describe("franja de ausencia", () => {
+  it("un turno de las 15:59 es de mañana", () => expect(franjaDeHora("15:59:00")).toBe("manana"));
+  it("un turno de las 16:00 es de tarde", () => expect(franjaDeHora("16:00:00")).toBe("tarde"));
+  it("ausencia de mañana no cubre un turno de las 18:00", () => expect(ausenciaCubre("manana", "18:00")).toBe(false));
+  it("día completo cubre cualquier turno", () => expect(ausenciaCubre("completo", "09:00")).toBe(true));
+});

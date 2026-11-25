@@ -64,6 +64,7 @@ export type Database = {
           creado_en: string
           dia: number
           estado: string
+          franja: string
           id: string
           motivo: string
           motivo_rechazo: string | null
@@ -75,6 +76,7 @@ export type Database = {
           creado_en?: string
           dia: number
           estado?: string
+          franja?: string
           id?: string
           motivo?: string
           motivo_rechazo?: string | null
@@ -86,6 +88,7 @@ export type Database = {
           creado_en?: string
           dia?: number
           estado?: string
+          franja?: string
           id?: string
           motivo?: string
           motivo_rechazo?: string | null
@@ -529,6 +532,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      _ausencia_cubre: {
+        Args: { _franja: string; _inicio: string }
+        Returns: boolean
+      }
       _costos_semana: {
         Args: { _semana: string }
         Returns: {
