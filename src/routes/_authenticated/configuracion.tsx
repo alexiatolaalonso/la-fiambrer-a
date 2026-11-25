@@ -207,18 +207,24 @@ function FilaPersonal({ p, admin, locales, guardar }: {
   p: Persona; admin: boolean; locales: Local[]; guardar: ReturnType<typeof useGuardar>;
 }) {
   const [hab, setHab] = useState(p.habilidades.join(", "));
+  const [editando, setEditando] = useState(false);
+  const libre = admin && editando;
+  const cancelar = () => { setEditando(false); setHab(p.habilidades.join(", ")); };
   return (
-    <form className="flex flex-wrap items-center gap-2 border-b border-border pb-2" onSubmit={(e) => { e.preventDefault(); guardar(supabase.from("persona").update(datos(new FormData(e.currentTarget), locales)).eq("id", p.id)); }}>
-      <input name="alias" defaultValue={p.alias} disabled={!admin} className={`${input} w-32`} aria-label="Alias" />
+    <form key={editando ? "edit" : "ver"} className="flex flex-wrap items-center gap-2 border-b border-border pb-2" onSubmit={(e) => { e.preventDefault(); guardar(supabase.from("persona").update(datos(new FormData(e.currentTarget), locales)).eq("id", p.id)); setEditando(false); }}>
+      <input name="alias" defaultValue={p.alias} disabled={!libre} className={`${input} w-32`} aria-label="Alias" />
       <span className="flex w-9 shrink-0 justify-center"><HabilidadesIconos habilidades={lista(hab)} /></span>
-      <input name="email" type="email" defaultValue={p.email} disabled={!admin} className={`${input} w-52`} aria-label="Email" />
-      <Locales locales={locales} sel={p.locales} admin={admin} />
-      <input name="hab" value={hab} onChange={(e) => setHab(e.target.value)} disabled={!admin} placeholder="Habilidades (separadas por comas)" className={`${input} flex-1 min-w-48`} aria-label="Habilidades" />
-      <input name="tope" type="number" min="0" defaultValue={p.tope_semanal} disabled={!admin} className={`${input} w-20`} aria-label="Tope semanal" title="Tope semanal (h)" />
-      {admin && <>
+      <input name="email" type="email" defaultValue={p.email} disabled={!libre} className={`${input} w-52`} aria-label="Email" />
+      <Locales locales={locales} sel={p.locales} admin={libre} />
+      <input name="hab" value={hab} onChange={(e) => setHab(e.target.value)} disabled={!libre} placeholder="Habilidades (separadas por comas)" className={`${input} flex-1 min-w-48`} aria-label="Habilidades" />
+      <input name="tope" type="number" min="0" defaultValue={p.tope_semanal} disabled={!libre} className={`${input} w-20`} aria-label="Tope semanal" title="Tope semanal (h)" />
+      {admin && (editando ? <>
         <Button type="submit" variant="outline">Guardar</Button>
+        <Button type="button" variant="ghost" onClick={cancelar}>Cancelar</Button>
         <Button type="button" variant="ghost" onClick={() => confirm(`¿Borrar a ${p.alias}?`) && guardar(supabase.from("persona").delete().eq("id", p.id), "Borrado")}>Borrar</Button>
-      </>}
+      </> : (
+        <Button type="button" variant="outline" onClick={() => setEditando(true)}>Editar</Button>
+      ))}
     </form>
   );
 }
