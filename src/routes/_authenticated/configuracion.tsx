@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { createContext, useContext, useState, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -16,10 +16,6 @@ export const Route = createFileRoute("/_authenticated/configuracion")({
 
 const input = "h-9 rounded border border-input bg-card px-2 text-sm";
 
-/** Modo edición de toda la página: un solo botón de arriba lo activa y lo desactiva. */
-const Edicion = createContext(false);
-const useEdicion = () => useContext(Edicion);
-
 function useGuardar() {
   const refrescar = useRefrescar();
   return async (p: PromiseLike<{ error: { message: string } | null }>, ok = "Guardado") => {
@@ -35,136 +31,168 @@ function Configuracion() {
   const ses = useSesion();
   const guardar = useGuardar();
   const refrescar = useRefrescar();
-  const [editando, setEditando] = useState(false);
   if (cat.isLoading || !cat.data) return <p className="text-muted-foreground">Cargando…</p>;
-  const { locales, puestos, parametros, tarifas } = cat.data;
+  const { locales, puestos } = cat.data;
   const staff = !!ses.data?.staff;
-  const ed = editando && staff;
 
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-end gap-3">
         <h1 className="mr-auto text-4xl text-primary">Configuración</h1>
-        {staff && (
-          <Button variant={ed ? "default" : "outline"} onClick={() => setEditando((v) => !v)}>
-            {ed ? "Terminar edición" : "Editar"}
-          </Button>
-        )}
         <Button variant="destructive" onClick={async () => {
           if (!confirm("¿Reiniciar todos los datos de ejemplo? Se perderán los cambios.")) return;
           try { await ejecutar("reiniciar", {}); toast.success("Datos reiniciados"); } catch (e) { toast.error((e as Error).message); }
           refrescar();
         }}>Reiniciar datos</Button>
       </div>
-      <Edicion.Provider value={ed}>
-        <Tabs defaultValue="franjas">
-          <TabsList className="flex-wrap h-auto">
-            <TabsTrigger value="personal">Personal</TabsTrigger>
-            <TabsTrigger value="franjas">Franjas</TabsTrigger>
-            <TabsTrigger value="tarifas">Tarifas</TabsTrigger>
-            <TabsTrigger value="parametros">Parámetros</TabsTrigger>
-            <TabsTrigger value="locales">Locales</TabsTrigger>
-            <TabsTrigger value="puestos">Puestos</TabsTrigger>
-          </TabsList>
+      <Tabs defaultValue="franjas">
+        <TabsList className="flex-wrap h-auto">
+          <TabsTrigger value="personal">Personal</TabsTrigger>
+          <TabsTrigger value="franjas">Franjas</TabsTrigger>
+          <TabsTrigger value="tarifas">Tarifas</TabsTrigger>
+          <TabsTrigger value="parametros">Parámetros</TabsTrigger>
+          <TabsTrigger value="locales">Locales</TabsTrigger>
+          <TabsTrigger value="puestos">Puestos</TabsTrigger>
+        </TabsList>
 
-          <TabsContent value="personal"><Personal /></TabsContent>
-          <TabsContent value="franjas"><Franjas /></TabsContent>
+        <TabsContent value="personal"><Personal /></TabsContent>
+        <TabsContent value="franjas"><Franjas /></TabsContent>
 
-          <TabsContent value="tarifas" className="pizarra p-3 space-y-3">
+        <TabsContent value="tarifas" className="pizarra p-3 space-y-3">
+          {staff && (
             <form className="flex flex-wrap gap-2" onSubmit={(e) => { const g = fd(e); guardar(supabase.from("tarifa").insert({ puesto_id: g("puesto"), importe: Number(g("importe")), vigente_desde: g("desde") }), "Nueva tarifa registrada"); }}>
-              <select name="puesto" disabled={!ed} className={input}>{puestos.map((p) => <option key={p.id} value={p.id}>{p.nombre}</option>)}</select>
-              <input name="importe" type="number" min="1" step="0.01" required disabled={!ed} placeholder="Importe por hora" className={input} />
-              <input name="desde" type="date" required disabled={!ed} className={input} />
-              {ed && <Button type="submit">Agregar versión</Button>}
+              <select name="puesto" className={input}>{puestos.map((p) => <option key={p.id} value={p.id}>{p.nombre}</option>)}</select>
+              <input name="importe" type="number" min="1" step="0.01" required placeholder="Importe por hora" className={input} />
+              <input name="desde" type="date" required className={input} />
+              <Button type="submit">Agregar versión</Button>
             </form>
-            <p className="text-xs text-muted-foreground">Las tarifas no se editan: cada cambio crea una versión nueva. Los turnos ya asignados conservan su tarifa.</p>
-            {puestos.map((p) => (
-              <div key={p.id}>
-                <h3 className="text-xl">{p.nombre}</h3>
-                <ul className="text-sm">{tarifas.filter((t) => t.puesto_id === p.id).map((t, i) => (
-                  <li key={t.id} className={i === 0 ? "font-semibold" : "text-muted-foreground"}>{mxn(Number(t.importe))}/h desde {t.vigente_desde}{i === 0 && " (más reciente)"}</li>
-                ))}</ul>
-              </div>
-            ))}
-          </TabsContent>
+          )}
+          <p className="text-xs text-muted-foreground">Las tarifas no se editan: cada cambio crea una versión nueva. Los turnos ya asignados conservan su tarifa.</p>
+          {puestos.map((p) => (
+            <div key={p.id}>
+              <h3 className="text-xl">{p.nombre}</h3>
+              <ul className="text-sm">{tarifasDe(cat.data.tarifas, p.id).map((t, i) => (
+                <li key={t.id} className={i === 0 ? "font-semibold" : "text-muted-foreground"}>{mxn(Number(t.importe))}/h desde {t.vigente_desde}{i === 0 && " (más reciente)"}</li>
+              ))}</ul>
+            </div>
+          ))}
+        </TabsContent>
 
-          <TabsContent value="parametros" className="pizarra p-3">
-            {parametros && (
-              <form className="grid max-w-md gap-3" onSubmit={(e) => {
-                e.preventDefault(); const f = new FormData(e.currentTarget); const n = (k: string) => Number(f.get(k));
-                guardar(supabase.from("parametros").update({ descanso_min_h: n("d"), max_dias_seguidos: n("m"), tope_semanal_default: n("t"), mult_extra: n("x"), prima_dominical: n("p") }).eq("id", 1));
-              }}>
-                <Campo label="Descanso mínimo entre turnos (horas)" name="d" v={parametros.descanso_min_h} disabled={!ed} />
-                <Campo label="Máximo de días seguidos" name="m" v={parametros.max_dias_seguidos} disabled={!ed} />
-                <Campo label="Tope semanal de horas (por defecto)" name="t" v={parametros.tope_semanal_default} disabled={!ed} />
-                <Campo label="Multiplicador hora extra" name="x" v={parametros.mult_extra} step="0.05" disabled={!ed} />
-                <Campo label="Prima dominical (0.25 = 25%)" name="p" v={parametros.prima_dominical} step="0.01" disabled={!ed} />
-                {ed && <Button type="submit" className="w-fit">Guardar</Button>}
-              </form>
-            )}
-          </TabsContent>
+        <TabsContent value="parametros" className="pizarra p-3">
+          <Parametros />
+        </TabsContent>
 
-          <TabsContent value="locales" className="pizarra p-3 space-y-2">
-            {locales.map((l) => (
-              <form key={l.id} className="flex gap-2" onSubmit={(e) => { e.preventDefault(); const n = String(new FormData(e.currentTarget).get("n")); guardar(supabase.from("local").update({ nombre: n }).eq("id", l.id)); }}>
-                <input name="n" defaultValue={l.nombre} disabled={!ed} className={`${input} flex-1`} aria-label="Nombre del local" />
-                {ed && <>
-                  <Button type="submit" variant="outline">Guardar</Button>
-                  <Button type="button" variant="ghost" onClick={() => confirm(`¿Borrar ${l.nombre} y sus franjas?`) && guardar(supabase.from("local").delete().eq("id", l.id), "Borrado")}>Borrar</Button>
-                </>}
-              </form>
-            ))}
-            {ed && <form className="flex gap-2 border-t border-border pt-2" onSubmit={(e) => { const g = fd(e); guardar(supabase.from("local").insert({ id: g("id"), nombre: g("n") })); }}>
-              <input name="id" required placeholder="clave (ej. roma)" pattern="[a-z0-9\-]+" className={input} />
-              <input name="n" required placeholder="Nombre" className={`${input} flex-1`} />
-              <Button type="submit">Agregar local</Button>
-            </form>}
-          </TabsContent>
+        <TabsContent value="locales" className="pizarra p-3 space-y-2">
+          {locales.map((l) => <FilaLocal key={l.id} l={l} staff={staff} guardar={guardar} />)}
+          {staff && <form className="flex gap-2 border-t border-border pt-2" onSubmit={(e) => { const g = fd(e); guardar(supabase.from("local").insert({ id: g("id"), nombre: g("n") })); }}>
+            <input name="id" required placeholder="clave (ej. roma)" pattern="[a-z0-9\-]+" className={input} />
+            <input name="n" required placeholder="Nombre" className={`${input} flex-1`} />
+            <Button type="submit">Agregar local</Button>
+          </form>}
+        </TabsContent>
 
-          <TabsContent value="puestos" className="pizarra p-3 space-y-2">
-            {puestos.map((p) => (
-              <form key={p.id} className="flex flex-wrap gap-2" onSubmit={(e) => { e.preventDefault(); const f = new FormData(e.currentTarget); guardar(supabase.from("puesto").update({ nombre: String(f.get("n")), habilidad_requerida: String(f.get("h")) || null }).eq("id", p.id)); }}>
-                <input name="n" defaultValue={p.nombre} disabled={!ed} className={input} aria-label="Nombre" />
-                <input name="h" defaultValue={p.habilidad_requerida ?? ""} disabled={!ed} placeholder="Habilidad requerida" className={`${input} flex-1`} aria-label="Habilidad requerida" />
-                {ed && <>
-                  <Button type="submit" variant="outline">Guardar</Button>
-                  <Button type="button" variant="ghost" onClick={() => confirm(`¿Borrar ${p.nombre}?`) && guardar(supabase.from("puesto").delete().eq("id", p.id), "Borrado")}>Borrar</Button>
-                </>}
-              </form>
-            ))}
-            {ed && <form className="flex flex-wrap gap-2 border-t border-border pt-2" onSubmit={(e) => { const g = fd(e); guardar(supabase.from("puesto").insert({ id: g("id"), nombre: g("n"), habilidad_requerida: g("h") || null })); }}>
-              <input name="id" required placeholder="clave" pattern="[a-z0-9\-]+" className={input} />
-              <input name="n" required placeholder="Nombre" className={input} />
-              <input name="h" placeholder="Habilidad requerida" className={`${input} flex-1`} />
-              <Button type="submit">Agregar puesto</Button>
-            </form>}
-          </TabsContent>
-        </Tabs>
-      </Edicion.Provider>
+        <TabsContent value="puestos" className="pizarra p-3 space-y-2">
+          {puestos.map((p) => <FilaPuesto key={p.id} p={p} staff={staff} guardar={guardar} />)}
+          {staff && <form className="flex flex-wrap gap-2 border-t border-border pt-2" onSubmit={(e) => { const g = fd(e); guardar(supabase.from("puesto").insert({ id: g("id"), nombre: g("n"), habilidad_requerida: g("h") || null })); }}>
+            <input name="id" required placeholder="clave" pattern="[a-z0-9\-]+" className={input} />
+            <input name="n" required placeholder="Nombre" className={input} />
+            <input name="h" placeholder="Habilidad requerida" className={`${input} flex-1`} />
+            <Button type="submit">Agregar puesto</Button>
+          </form>}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
+
+type Tarifa = { id: number; puesto_id: string; importe: number | string; vigente_desde: string };
+const tarifasDe = (tarifas: Tarifa[], puestoId: string) => tarifas.filter((t) => t.puesto_id === puestoId);
 
 function Campo({ label, name, v, step = "1", disabled }: { label: string; name: string; v: number; step?: string; disabled?: boolean }) {
   return <label className="grid gap-1 text-sm">{label}<input name={name} type="number" step={step} min="0" defaultValue={v} disabled={disabled} className={input} /></label>;
 }
 
+function Parametros() {
+  const cat = useCatalogo();
+  const ses = useSesion();
+  const guardar = useGuardar();
+  const [ed, setEd] = useState(false);
+  const parametros = cat.data?.parametros;
+  if (!parametros) return null;
+  const staff = !!ses.data?.staff;
+  return (
+    <form className="grid max-w-md gap-3" onSubmit={(e) => {
+      e.preventDefault(); const f = new FormData(e.currentTarget); const n = (k: string) => Number(f.get(k));
+      guardar(supabase.from("parametros").update({ descanso_min_h: n("d"), max_dias_seguidos: n("m"), tope_semanal_default: n("t"), mult_extra: n("x"), prima_dominical: n("p") }).eq("id", 1));
+      setEd(false);
+    }}>
+      <Campo label="Descanso mínimo entre turnos (horas)" name="d" v={parametros.descanso_min_h} disabled={!ed} />
+      <Campo label="Máximo de días seguidos" name="m" v={parametros.max_dias_seguidos} disabled={!ed} />
+      <Campo label="Tope semanal de horas (por defecto)" name="t" v={parametros.tope_semanal_default} disabled={!ed} />
+      <Campo label="Multiplicador hora extra" name="x" v={parametros.mult_extra} step="0.05" disabled={!ed} />
+      <Campo label="Prima dominical (0.25 = 25%)" name="p" v={parametros.prima_dominical} step="0.01" disabled={!ed} />
+      {staff && (ed ? (
+        <div className="flex gap-2">
+          <Button type="submit" className="w-fit">Guardar</Button>
+          <Button type="button" variant="ghost" className="w-fit" onClick={() => setEd(false)}>Cancelar</Button>
+        </div>
+      ) : (
+        <Button type="button" variant="outline" className="w-fit" onClick={() => setEd(true)}>Editar</Button>
+      ))}
+    </form>
+  );
+}
+
+function FilaLocal({ l, staff, guardar }: { l: Local; staff: boolean; guardar: ReturnType<typeof useGuardar> }) {
+  const [ed, setEd] = useState(false);
+  return (
+    <form className="flex gap-2" onSubmit={(e) => { e.preventDefault(); const n = String(new FormData(e.currentTarget).get("n")); guardar(supabase.from("local").update({ nombre: n }).eq("id", l.id)); setEd(false); }}>
+      <input name="n" defaultValue={l.nombre} disabled={!ed} className={`${input} flex-1`} aria-label="Nombre del local" />
+      {staff && (ed ? <>
+        <Button type="submit" variant="outline">Guardar</Button>
+        <Button type="button" variant="ghost" onClick={() => setEd(false)}>Cancelar</Button>
+        <Button type="button" variant="ghost" onClick={() => confirm(`¿Borrar ${l.nombre} y sus franjas?`) && guardar(supabase.from("local").delete().eq("id", l.id), "Borrado")}>Borrar</Button>
+      </> : (
+        <Button type="button" variant="outline" onClick={() => setEd(true)}>Editar</Button>
+      ))}
+    </form>
+  );
+}
+
+function FilaPuesto({ p, staff, guardar }: { p: { id: string; nombre: string; habilidad_requerida: string | null }; staff: boolean; guardar: ReturnType<typeof useGuardar> }) {
+  const [ed, setEd] = useState(false);
+  return (
+    <form className="flex flex-wrap gap-2" onSubmit={(e) => { e.preventDefault(); const f = new FormData(e.currentTarget); guardar(supabase.from("puesto").update({ nombre: String(f.get("n")), habilidad_requerida: String(f.get("h")) || null }).eq("id", p.id)); setEd(false); }}>
+      <input name="n" defaultValue={p.nombre} disabled={!ed} className={input} aria-label="Nombre" />
+      <input name="h" defaultValue={p.habilidad_requerida ?? ""} disabled={!ed} placeholder="Habilidad requerida" className={`${input} flex-1`} aria-label="Habilidad requerida" />
+      {staff && (ed ? <>
+        <Button type="submit" variant="outline">Guardar</Button>
+        <Button type="button" variant="ghost" onClick={() => setEd(false)}>Cancelar</Button>
+        <Button type="button" variant="ghost" onClick={() => confirm(`¿Borrar ${p.nombre}?`) && guardar(supabase.from("puesto").delete().eq("id", p.id), "Borrado")}>Borrar</Button>
+      </> : (
+        <Button type="button" variant="outline" onClick={() => setEd(true)}>Editar</Button>
+      ))}
+    </form>
+  );
+}
+
 function Franjas() {
   const cat = useCatalogo();
+  const ses = useSesion();
   const guardar = useGuardar();
-  const ed = useEdicion();
   const [sel, setSel] = useState<string>();
   const semanaId = sel ?? semanaPorDefecto(cat.data?.semanas ?? []);
   const sem = useSemana(semanaId);
   if (!cat.data || !sem.data) return null;
   const { locales, puestos } = cat.data;
+  const staff = !!ses.data?.staff;
   const cerrada = sem.data.semana.estado === "cerrada";
+  const puedeAgregar = staff && !cerrada;
   return (
     <div className="pizarra space-y-3 p-3">
       <SelectorSemana semanas={cat.data.semanas} valor={semanaId} onCambio={setSel} />
-      {cerrada ? <p className="text-sm text-muted-foreground">Semana cerrada: solo lectura.</p>
-        : !ed ? <p className="text-sm text-muted-foreground">Pulsa «Editar» para modificar las franjas.</p>
-        : (
+      {cerrada && <p className="text-sm text-muted-foreground">Semana cerrada: solo lectura.</p>}
+      {puedeAgregar && (
         <form className="flex flex-wrap gap-2" onSubmit={(e) => {
           const g = fd(e);
           guardar(supabase.from("franja").insert({ semana_id: semanaId!, local_id: g("l"), puesto_id: g("p"), dia: Number(g("d")), inicio: g("i"), fin: g("f"), cobertura_minima: Number(g("c")), cupo_maximo: Number(g("x")), etiqueta: g("e") || null, habilidad_requerida: g("h") || null }), "Franja creada");
@@ -186,21 +214,39 @@ function Franjas() {
           <thead><tr className="text-left text-muted-foreground"><th>Día</th><th>Local</th><th>Puesto</th><th>Horario</th><th>Mín.</th><th>Cupo</th><th>Requisito</th><th /></tr></thead>
           <tbody>
             {sem.data.franjas.map((f) => (
-              <tr key={f.id} className="border-t border-border">
-                <td className="py-1">{DIAS[f.dia]}</td>
-                <td>{locales.find((l) => l.id === f.local_id)?.nombre}</td>
-                <td>{f.etiqueta ?? puestos.find((p) => p.id === f.puesto_id)?.nombre}</td>
-                <td>{hhmm(f.inicio)}–{hhmm(f.fin)}</td>
-                <td>{cerrada || !ed ? f.cobertura_minima : <input type="number" min="0" defaultValue={f.cobertura_minima} className={`${input} w-16`} aria-label="Cobertura mínima" onBlur={(e) => Number(e.target.value) !== f.cobertura_minima && guardar(supabase.from("franja").update({ cobertura_minima: Number(e.target.value) }).eq("id", f.id))} />}</td>
-                <td>{f.cupo_maximo}</td>
-                <td className="text-xs">{f.habilidad_requerida ?? "—"}</td>
-                <td>{!cerrada && ed && <button className="text-xs text-peligro underline" onClick={() => confirm("¿Borrar franja?") && guardar(supabase.from("franja").delete().eq("id", f.id), "Borrada")}>Borrar</button>}</td>
-              </tr>
+              <FilaFranja key={f.id} f={f} locales={locales} puestos={puestos} staff={staff && !cerrada} guardar={guardar} />
             ))}
           </tbody>
         </table>
       </div>
     </div>
+  );
+}
+
+type Franja = { id: string; dia: number; local_id: string; puesto_id: string; inicio: string; fin: string; cobertura_minima: number; cupo_maximo: number; etiqueta: string | null; habilidad_requerida: string | null };
+
+function FilaFranja({ f, locales, puestos, staff, guardar }: {
+  f: Franja; locales: Local[]; puestos: { id: string; nombre: string }[]; staff: boolean; guardar: ReturnType<typeof useGuardar>;
+}) {
+  const [ed, setEd] = useState(false);
+  return (
+    <tr className="border-t border-border">
+      <td className="py-1">{DIAS[f.dia]}</td>
+      <td>{locales.find((l) => l.id === f.local_id)?.nombre}</td>
+      <td>{f.etiqueta ?? puestos.find((p) => p.id === f.puesto_id)?.nombre}</td>
+      <td>{hhmm(f.inicio)}–{hhmm(f.fin)}</td>
+      <td>{ed ? <input type="number" min="0" defaultValue={f.cobertura_minima} className={`${input} w-16`} aria-label="Cobertura mínima" onBlur={(e) => Number(e.target.value) !== f.cobertura_minima && guardar(supabase.from("franja").update({ cobertura_minima: Number(e.target.value) }).eq("id", f.id))} /> : f.cobertura_minima}</td>
+      <td>{f.cupo_maximo}</td>
+      <td className="text-xs">{f.habilidad_requerida ?? "—"}</td>
+      <td className="whitespace-nowrap">
+        {staff && (ed ? <>
+          <button type="button" className="text-xs underline" onClick={() => setEd(false)}>Listo</button>
+          {" "}<button type="button" className="text-xs text-peligro underline" onClick={() => confirm("¿Borrar franja?") && guardar(supabase.from("franja").delete().eq("id", f.id), "Borrada")}>Borrar</button>
+        </> : (
+          <button type="button" className="text-xs underline" onClick={() => setEd(true)}>Editar</button>
+        ))}
+      </td>
+    </tr>
   );
 }
 
@@ -226,22 +272,27 @@ const Locales = ({ locales, sel, editable }: { locales: Local[]; sel: string[]; 
   ))}</div>
 );
 
-function FilaPersonal({ p, editable, locales, guardar }: {
-  p: Persona; editable: boolean; locales: Local[]; guardar: ReturnType<typeof useGuardar>;
+function FilaPersonal({ p, admin, locales, guardar }: {
+  p: Persona; admin: boolean; locales: Local[]; guardar: ReturnType<typeof useGuardar>;
 }) {
+  const [ed, setEd] = useState(false);
   const [hab, setHab] = useState(p.habilidades.join(", "));
+  const cancelar = () => { setHab(p.habilidades.join(", ")); setEd(false); };
   return (
-    <form className="flex flex-wrap items-center gap-2 border-b border-border pb-2" onSubmit={(e) => { e.preventDefault(); guardar(supabase.from("persona").update(datos(new FormData(e.currentTarget), locales)).eq("id", p.id)); }}>
-      <input name="alias" defaultValue={p.alias} disabled={!editable} className={`${input} w-32`} aria-label="Alias" />
+    <form className="flex flex-wrap items-center gap-2 border-b border-border pb-2" onSubmit={(e) => { e.preventDefault(); guardar(supabase.from("persona").update(datos(new FormData(e.currentTarget), locales)).eq("id", p.id)); setEd(false); }}>
+      <input name="alias" defaultValue={p.alias} disabled={!ed} className={`${input} w-32`} aria-label="Alias" />
       <span className="flex w-9 shrink-0 justify-center"><HabilidadesIconos habilidades={lista(hab)} /></span>
-      <input name="email" type="email" defaultValue={p.email} disabled={!editable} className={`${input} w-52`} aria-label="Email" />
-      <Locales locales={locales} sel={p.locales} editable={editable} />
-      <input name="hab" value={hab} onChange={(e) => setHab(e.target.value)} disabled={!editable} placeholder="Habilidades (separadas por comas)" className={`${input} flex-1 min-w-48`} aria-label="Habilidades" />
-      <input name="tope" type="number" min="0" defaultValue={p.tope_semanal} disabled={!editable} className={`${input} w-20`} aria-label="Tope semanal" title="Tope semanal (h)" />
-      {editable && <>
+      <input name="email" type="email" defaultValue={p.email} disabled={!ed} className={`${input} w-52`} aria-label="Email" />
+      <Locales locales={locales} sel={p.locales} editable={ed} />
+      <input name="hab" value={hab} onChange={(e) => setHab(e.target.value)} disabled={!ed} placeholder="Habilidades (separadas por comas)" className={`${input} flex-1 min-w-48`} aria-label="Habilidades" />
+      <input name="tope" type="number" min="0" defaultValue={p.tope_semanal} disabled={!ed} className={`${input} w-20`} aria-label="Tope semanal" title="Tope semanal (h)" />
+      {admin && (ed ? <>
         <Button type="submit" variant="outline">Guardar</Button>
+        <Button type="button" variant="ghost" onClick={cancelar}>Cancelar</Button>
         <Button type="button" variant="ghost" onClick={() => confirm(`¿Borrar a ${p.alias}?`) && guardar(supabase.from("persona").delete().eq("id", p.id), "Borrado")}>Borrar</Button>
-      </>}
+      </> : (
+        <Button type="button" variant="outline" onClick={() => setEd(true)}>Editar</Button>
+      ))}
     </form>
   );
 }
@@ -251,19 +302,17 @@ function Personal() {
   const ses = useSesion();
   const guardar = useGuardar();
   const refrescar = useRefrescar();
-  const ed = useEdicion();
   const [nuevaHab, setNuevaHab] = useState("");
   if (!cat.data) return null;
   const { personas, locales, parametros } = cat.data;
   const admin = ses.data?.rol === "admin";
-  const editable = ed && admin;
   return (
     <div className="pizarra space-y-2 p-3">
-      {!editable && <p className="text-sm text-muted-foreground">{admin ? "Pulsa «Editar» para modificar al personal." : "Solo administración puede editar al personal."}</p>}
+      {!admin && <p className="text-sm text-muted-foreground">Solo administración puede editar al personal.</p>}
       {personas.filter((p) => p.email).map((p) => (
-        <FilaPersonal key={p.id} p={p} editable={editable} locales={locales} guardar={guardar} />
+        <FilaPersonal key={p.id} p={p} admin={admin} locales={locales} guardar={guardar} />
       ))}
-      {editable && (
+      {admin && (
         <form className="flex flex-wrap items-center gap-2 pt-2" onSubmit={async (e) => {
           e.preventDefault(); const form = e.currentTarget; const f = new FormData(form); const id = String(f.get("id")).trim(); const d = datos(f, locales);
           if (!d.locales.length) { toast.error("Marca al menos un local para poder asignarle turnos."); return; }
