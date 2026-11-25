@@ -229,22 +229,76 @@ function FilaFranja({ f, locales, puestos, staff, guardar }: {
   f: Franja; locales: Local[]; puestos: { id: string; nombre: string }[]; staff: boolean; guardar: ReturnType<typeof useGuardar>;
 }) {
   const [ed, setEd] = useState(false);
+  const [v, setV] = useState(() => ({
+    dia: f.dia, local_id: f.local_id, puesto_id: f.puesto_id,
+    inicio: hhmm(f.inicio), fin: hhmm(f.fin),
+    cobertura_minima: f.cobertura_minima, cupo_maximo: f.cupo_maximo,
+    etiqueta: f.etiqueta ?? "", habilidad_requerida: f.habilidad_requerida ?? "",
+  }));
+  const set = (k: keyof typeof v, val: string | number) => setV((prev) => ({ ...prev, [k]: val }));
+  const cancelar = () => {
+    setV({ dia: f.dia, local_id: f.local_id, puesto_id: f.puesto_id, inicio: hhmm(f.inicio), fin: hhmm(f.fin), cobertura_minima: f.cobertura_minima, cupo_maximo: f.cupo_maximo, etiqueta: f.etiqueta ?? "", habilidad_requerida: f.habilidad_requerida ?? "" });
+    setEd(false);
+  };
+  const guardarFila = () => {
+    if (Number(v.cobertura_minima) > Number(v.cupo_maximo)) {
+      toast.error("La cobertura mínima no puede ser mayor que el cupo máximo.");
+      return;
+    }
+    guardar(supabase.from("franja").update({
+      dia: Number(v.dia), local_id: v.local_id, puesto_id: v.puesto_id,
+      inicio: v.inicio, fin: v.fin,
+      cobertura_minima: Number(v.cobertura_minima), cupo_maximo: Number(v.cupo_maximo),
+      etiqueta: v.etiqueta || null, habilidad_requerida: v.habilidad_requerida || null,
+    }).eq("id", f.id));
+    setEd(false);
+  };
+  if (!ed) {
+    return (
+      <tr className="border-t border-border">
+        <td className="py-1">{DIAS[f.dia]}</td>
+        <td>{locales.find((l) => l.id === f.local_id)?.nombre}</td>
+        <td>{f.etiqueta ?? puestos.find((p) => p.id === f.puesto_id)?.nombre}</td>
+        <td>{hhmm(f.inicio)}–{hhmm(f.fin)}</td>
+        <td>{f.cobertura_minima}</td>
+        <td>{f.cupo_maximo}</td>
+        <td className="text-xs">{f.habilidad_requerida ?? "—"}</td>
+        <td className="whitespace-nowrap">
+          {staff && <button type="button" className="text-xs underline" onClick={() => setEd(true)}>Editar</button>}
+        </td>
+      </tr>
+    );
+  }
   return (
-    <tr className="border-t border-border">
-      <td className="py-1">{DIAS[f.dia]}</td>
-      <td>{locales.find((l) => l.id === f.local_id)?.nombre}</td>
-      <td>{f.etiqueta ?? puestos.find((p) => p.id === f.puesto_id)?.nombre}</td>
-      <td>{hhmm(f.inicio)}–{hhmm(f.fin)}</td>
-      <td>{ed ? <input type="number" min="0" defaultValue={f.cobertura_minima} className={`${input} w-16`} aria-label="Cobertura mínima" onBlur={(e) => Number(e.target.value) !== f.cobertura_minima && guardar(supabase.from("franja").update({ cobertura_minima: Number(e.target.value) }).eq("id", f.id))} /> : f.cobertura_minima}</td>
-      <td>{f.cupo_maximo}</td>
-      <td className="text-xs">{f.habilidad_requerida ?? "—"}</td>
+    <tr className="border-t border-border bg-muted/40">
+      <td className="py-1">
+        <select value={v.dia} onChange={(e) => set("dia", Number(e.target.value))} className={input} aria-label="Día">
+          {DIAS.map((d, i) => <option key={d} value={i}>{d}</option>)}
+        </select>
+      </td>
+      <td>
+        <select value={v.local_id} onChange={(e) => set("local_id", e.target.value)} className={input} aria-label="Local">
+          {locales.map((l) => <option key={l.id} value={l.id}>{l.nombre}</option>)}
+        </select>
+      </td>
+      <td>
+        <select value={v.puesto_id} onChange={(e) => set("puesto_id", e.target.value)} className={input} aria-label="Puesto">
+          {puestos.map((p) => <option key={p.id} value={p.id}>{p.nombre}</option>)}
+        </select>
+        <input value={v.etiqueta} onChange={(e) => set("etiqueta", e.target.value)} placeholder="Etiqueta (opcional)" className={`${input} mt-1 w-full`} aria-label="Etiqueta" />
+      </td>
       <td className="whitespace-nowrap">
-        {staff && (ed ? <>
-          <button type="button" className="text-xs underline" onClick={() => setEd(false)}>Listo</button>
-          {" "}<button type="button" className="text-xs text-peligro underline" onClick={() => confirm("¿Borrar franja?") && guardar(supabase.from("franja").delete().eq("id", f.id), "Borrada")}>Borrar</button>
-        </> : (
-          <button type="button" className="text-xs underline" onClick={() => setEd(true)}>Editar</button>
-        ))}
+        <input type="time" value={v.inicio} onChange={(e) => set("inicio", e.target.value)} className={`${input} w-24`} aria-label="Inicio" />
+        {"–"}
+        <input type="time" value={v.fin} onChange={(e) => set("fin", e.target.value)} className={`${input} w-24`} aria-label="Fin" />
+      </td>
+      <td><input type="number" min="0" value={v.cobertura_minima} onChange={(e) => set("cobertura_minima", e.target.value)} className={`${input} w-16`} aria-label="Cobertura mínima" /></td>
+      <td><input type="number" min="1" value={v.cupo_maximo} onChange={(e) => set("cupo_maximo", e.target.value)} className={`${input} w-16`} aria-label="Cupo máximo" /></td>
+      <td><input value={v.habilidad_requerida} onChange={(e) => set("habilidad_requerida", e.target.value)} placeholder="—" className={`${input} w-28`} aria-label="Requisito" /></td>
+      <td className="whitespace-nowrap">
+        <button type="button" className="text-xs underline" onClick={guardarFila}>Guardar</button>
+        {" "}<button type="button" className="text-xs underline" onClick={cancelar}>Cancelar</button>
+        {" "}<button type="button" className="text-xs text-peligro underline" onClick={() => confirm("¿Borrar franja?") && guardar(supabase.from("franja").delete().eq("id", f.id), "Borrada")}>Borrar</button>
       </td>
     </tr>
   );
