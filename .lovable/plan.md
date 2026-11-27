@@ -2,7 +2,7 @@
 
 ## Qué cambia para ti
 
-1. **Comida de 30 min**: un turno de más de 6 h cuenta 30 min menos de trabajo pagado (ej. 10:30–16:00 = 5,5 h → sin descuento; 13:30–19:30 = 6 h → sin descuento; 18:30–00:30... 6 h; 10:00–17:00 = 7 h → 6,5 h). Se ve en las horas de las fichas, en Costos y en el CSV.
+1. **Comida de 30 min**: un turno de más de 6 h cuenta 30 min menos de trabajo pagado (ej. un turno de 6 h cuenta 6 h; uno de 7 h cuenta 6,5 h). Se ve en las horas de las fichas, en Costos y en el CSV.
 2. **Tope de 9 h por turno**: no se podrá crear ni editar una franja que dure más de 9 h (aviso claro en Configuración → Franjas), y el planificador rechaza asignar a una franja así si ya existiera.
 3. **Límite de 48 h semanales**: si la asignación deja a la persona por encima de 48 h trabajadas en la semana, se rechaza con el motivo «Supera 48 h semanales: llevaría X h».
 4. **Horas extra al doble**: las horas por encima del tope semanal de la persona se pagan ×2. Hasta 9 h extra entran sin más. Si la asignación la lleva a más de 9 h extra, el planificador avisa en rojo y pide un motivo obligatorio antes de guardar; el motivo queda registrado.
