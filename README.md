@@ -3,7 +3,13 @@
 Planificador para dos locales en la Condesa (Tienda Condesa y Wine Bar Condesa), con tres roles: administración, encargado de turno y equipo.
 
 ## Entrar
-En la pantalla inicial, elige una cuenta de prueba: Administración, Encargado de turno o cualquiera de las 14 personas del equipo. Cada botón entra con una cuenta real (contraseña demo `fiambreria-demo-2026`), así que los permisos se aplican en la base de datos.
+En la pantalla inicial, escribe correo y contraseña. Cuentas de prueba (contraseña `fiambreria-demo-2026` para todas):
+
+- Administración: `admin.fiambreria@example.com`
+- Encargado: `encargado.fiambreria@example.com`
+- Equipo: `<nombre>.fiambreria@example.com` (mari, tono, lupe, rocio, beto, paco, ines, sofia, julian, meche, dani, caro, nico, vale)
+
+El rol lo decide la base de datos según la cuenta; nadie puede elegirlo.
 
 | Rol | Pantallas |
 |---|---|

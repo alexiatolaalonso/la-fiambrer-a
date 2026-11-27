@@ -32,7 +32,7 @@ use the editor.
 ## Project rules
 - All schedule writes (assign, remove, close week, requests, adjustments, reset) go through the SQL function `ejecutar_comando`; it is the only place enforcing idempotency, revision checks, locking and validation, so the UI never writes turnos directly.
 - Cost calculation lives in SQL (`_costos_semana`), used both for freezing on week close and for the cost panel, so the CSV and panel reconcile.
-- Demo sign-in uses fixed demo accounts created on demand by a server function; team identity maps to `persona` by email.
+- Sign-in is an email+password form only (no quick buttons); demo accounts are created on demand by a server function when the demo password is used; team identity maps to `persona` by email.
 - Team members only see turnos of weeks with `semana.publicada_en` set (enforced in turno RLS); staff publish via `ejecutar_comando('publicar_semana')`, and closing a week also publishes it.
 - Paid hours come from SQL `horas_pagadas` (meal deduction from `parametros`), mirrored by `horasPagadas` in reglas.ts; limits (max shift, weekly max, extra-hours-without-reason) live in `parametros`, and `asignar` raises `REQUIERE_MOTIVO:` so the UI asks for a reason and retries with `motivo_extra`.
 - Tariffs and week costs are admin-only at the database level (tarifa RLS, costos_semana check); encargado sees neither, so UI must not depend on them for staff.
