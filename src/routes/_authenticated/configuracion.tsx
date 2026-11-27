@@ -139,7 +139,7 @@ function Parametros() {
       <Campo label="Duración máxima de un turno (horas)" name="mt" v={parametros.max_horas_turno} step="0.5" disabled={!ed} />
       <Campo label="Máximo de horas a la semana" name="ms" v={parametros.max_horas_semana} step="0.5" disabled={!ed} />
       <Campo label="Horas extra sin pedir motivo" name="me" v={parametros.max_extra_sin_motivo} step="0.5" disabled={!ed} />
-      <Campo label="Suplemento por encargado ($ por hora)" name="se" v={parametros.suplemento_encargado} step="1" disabled={!ed} />
+      <Campo label="Suplemento por encargado (0.10 = 10%)" name="se" v={parametros.suplemento_encargado} step="0.01" disabled={!ed} />
       <label className="flex items-center justify-between gap-3 text-sm">
         <span>Doblar turno en el mismo día<span className="block text-xs text-muted-foreground">Permite dos turnos el mismo día si no se solapan</span></span>
         <Switch checked={dobleV} onCheckedChange={setDoble} disabled={!ed} aria-label="Doblar turno en el mismo día" />

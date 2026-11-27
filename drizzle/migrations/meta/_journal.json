@@ -78,6 +78,13 @@
       "when": 1795806027246,
       "tag": "0010_suplemento_encargado",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1795806103993,
+      "tag": "0011_suplemento_encargado_porcentaje",
+      "breakpoints": true
     }
   ]
 }
