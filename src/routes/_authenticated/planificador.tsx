@@ -4,7 +4,8 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { SelectorSemana } from "@/components/SelectorSemana";
 import { ejecutar, semanaPorDefecto, useCatalogo, useRefrescar, useSemana, type Franja } from "@/lib/datos";
-import { DIAS, addDias, diasDescansoFaltante, estadoCobertura, hhmm, horasFranja } from "@/lib/reglas";
+import { DIAS, addDias, diasDescansoFaltante, estadoCobertura, hhmm, horasPagadas } from "@/lib/reglas";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { HabilidadesIconos } from "@/components/HabilidadesIconos";
 
@@ -22,6 +23,8 @@ function Planificador() {
   const [elegida, setElegida] = useState<string | null>(null);
   const [rechazo, setRechazo] = useState<{ franja: string; motivo: string } | null>(null);
   const [ocupado, setOcupado] = useState(false);
+  const [pideMotivo, setPideMotivo] = useState<{ persona: string; franja: string; detalle: string } | null>(null);
+  const [motivoExtra, setMotivoExtra] = useState("");
 
   const personas = cat.data?.personas ?? [];
   const alias = (id: string) => personas.find((p) => p.id === id)?.alias ?? id;
@@ -42,23 +45,30 @@ function Planificador() {
 
   const resumen = useMemo(() => {
     const max = cat.data?.parametros?.max_dias_seguidos ?? 6;
+    const prm = cat.data?.parametros ?? { comida_min: 30, comida_desde_h: 6 };
     return personas.map((p) => {
       const mios = turnos.filter((t) => t.persona_id === p.id).map((t) => franjas.find((f) => f.id === t.franja_id)).filter(Boolean) as Franja[];
-      const horas = mios.reduce((a, f) => a + horasFranja(f.inicio, f.fin), 0);
+      const horas = mios.reduce((a, f) => a + horasPagadas(f.inicio, f.fin, prm), 0);
       const fechas = mios.map((f) => f.fecha!);
       return { p, horas, fechas, faltante: diasDescansoFaltante(fechas, max) };
     });
   }, [personas, turnos, franjas, cat.data?.parametros]);
 
-  async function asignar(personaId: string, franjaId: string) {
+  async function asignar(personaId: string, franjaId: string, motivo_extra?: string) {
     if (!sem.data || cerrada || ocupado) return;
     setOcupado(true);
     try {
-      await ejecutar("asignar", { semana: semanaId, revision: sem.data.semana.revision, franja: franjaId, persona: personaId });
+      await ejecutar("asignar", { semana: semanaId, revision: sem.data.semana.revision, franja: franjaId, persona: personaId, ...(motivo_extra ? { motivo_extra } : {}) });
       setRechazo(null);
+      setPideMotivo(null);
+      setMotivoExtra("");
       toast.success(`${alias(personaId)} asignada`);
     } catch (e) {
       const motivo = (e as Error).message;
+      if (motivo.startsWith("REQUIERE_MOTIVO:")) {
+        setPideMotivo({ persona: personaId, franja: franjaId, detalle: motivo.replace("REQUIERE_MOTIVO:", "").trim() });
+        return;
+      }
       setRechazo({ franja: franjaId, motivo: `${alias(personaId)}: ${motivo}` });
       toast.error(`Rechazado — ${motivo}`);
     } finally {
@@ -212,9 +222,9 @@ function Planificador() {
                               {asignados.length}/{f.cobertura_minima} {est === "floja" ? "· falta cubrir" : ""}
                             </div>
                             <ul className="space-y-0.5">
-                              {asignados.map((t) => (
+                              {asignados.map((t, i) => (
                                 <li key={t.id} className={cn("flex items-center justify-between gap-1 rounded bg-background px-1", colorLocal(t.persona_id))}>
-                                  <span>{alias(t.persona_id)}</span>
+                                  <span>{alias(t.persona_id)}{f.cobertura_minima > 0 && i >= f.cobertura_minima && <span className="ml-1 rounded bg-primary/10 px-1 text-[10px] font-semibold text-primary">Refuerzo</span>}</span>
                                   {!cerrada && <button aria-label={`Quitar a ${alias(t.persona_id)}`} onClick={() => quitar(t.id)} className="text-muted-foreground hover:text-peligro">×</button>}
                                 </li>
                               ))}
@@ -236,6 +246,21 @@ function Planificador() {
           </tbody>
         </table>
       </div>
+      <Dialog open={!!pideMotivo} onOpenChange={(o) => { if (!o) { setPideMotivo(null); setMotivoExtra(""); } }}>
+        <DialogContent>
+          <DialogHeader><DialogTitle className="text-peligro">Demasiadas horas extra</DialogTitle></DialogHeader>
+          <form className="space-y-3" onSubmit={(e) => { e.preventDefault(); if (pideMotivo && motivoExtra.trim()) asignar(pideMotivo.persona, pideMotivo.franja, motivoExtra.trim()); }}>
+            <p className="rounded-md border-l-4 border-peligro bg-peligro/10 px-3 py-2 text-sm">{pideMotivo && alias(pideMotivo.persona)} {pideMotivo?.detalle}. Para asignarla igualmente, escribe el motivo.</p>
+            <label className="block text-sm font-semibold">Motivo
+              <textarea required value={motivoExtra} onChange={(e) => setMotivoExtra(e.target.value)} className="mt-1 block w-full rounded-md border border-input bg-background px-2 py-1 font-normal" rows={3} />
+            </label>
+            <DialogFooter>
+              <Button type="button" variant="ghost" onClick={() => { setPideMotivo(null); setMotivoExtra(""); }}>Cancelar</Button>
+              <Button type="submit" disabled={!motivoExtra.trim() || ocupado}>Asignar con motivo</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
       <p className="flex flex-wrap gap-4 text-xs text-muted-foreground">
         <span><span className="mr-1 inline-block h-3 w-1 bg-tienda align-middle" />Tienda</span>
         <span><span className="mr-1 inline-block h-3 w-1 bg-winebar align-middle" />Wine Bar</span>
@@ -243,6 +268,7 @@ function Planificador() {
         <span><span className="mr-1 inline-block h-3 w-3 rounded-sm border-2 border-ok bg-ok/10 align-middle" />Cobertura completa</span>
         <span><span className="mr-1 inline-block h-3 w-3 rounded-sm border-2 border-peligro bg-peligro/10 align-middle" />Bajo cobertura mínima</span>
         <span><span className="mr-1 inline-block h-1.5 w-3 rounded-sm bg-peligro align-middle" />Día de descanso faltante</span>
+        <span><span className="mr-1 rounded bg-primary/10 px-1 text-[10px] font-semibold text-primary">Refuerzo</span>Por encima de la cobertura mínima</span>
       </p>
     </div>
   );

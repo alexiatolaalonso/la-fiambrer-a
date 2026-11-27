@@ -138,3 +138,14 @@ export function etiquetaAusencia(semanaId: string, dia: number, franja: string):
   const e = FRANJAS_AUSENCIA.find((x) => x.valor === franja)?.etiqueta ?? "Día completo";
   return `${f.charAt(0).toUpperCase()}${f.slice(1)} · ${e}`;
 }
+
+export type ParamsHoras = { comida_min: number; comida_desde_h: number };
+/** Horas pagadas: si el turno dura más de `comida_desde_h`, se descuentan `comida_min` minutos de comida. */
+export function horasPagadas(inicio: string, fin: string, p: ParamsHoras = { comida_min: 30, comida_desde_h: 6 }): number {
+  const h = horasFranja(inicio, fin);
+  return h > Number(p.comida_desde_h) ? h - Number(p.comida_min) / 60 : h;
+}
+/** Horas extra de la semana: lo que pasa del tope contratado. */
+export function horasExtra(horasSemana: number, tope: number): number {
+  return Math.max(0, horasSemana - tope);
+}

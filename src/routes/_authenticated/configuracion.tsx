@@ -8,7 +8,7 @@ import { SelectorSemana } from "@/components/SelectorSemana";
 import { supabase } from "@/integrations/supabase/client";
 import { ejecutar, semanaPorDefecto, useCatalogo, useRefrescar, useSemana, useSesion, type Persona } from "@/lib/datos";
 import { HabilidadesIconos } from "@/components/HabilidadesIconos";
-import { DIAS, hhmm, mxn } from "@/lib/reglas";
+import { DIAS, hhmm, horasFranja, mxn } from "@/lib/reglas";
 
 export const Route = createFileRoute("/_authenticated/configuracion")({
   head: () => ({ meta: [{ title: "Configuración — La Fiambrería" }, { name: "description", content: "Locales, puestos, franjas, tarifas versionadas y reglas de descanso." }, { property: "og:title", content: "Configuración — La Fiambrería" }, { property: "og:description", content: "Configuración del planificador." }] }),
@@ -126,7 +126,7 @@ function Parametros() {
   return (
     <form className="grid max-w-md gap-3" onSubmit={(e) => {
       e.preventDefault(); const f = new FormData(e.currentTarget); const n = (k: string) => Number(f.get(k));
-      guardar(supabase.from("parametros").update({ descanso_min_h: n("d"), max_dias_seguidos: n("m"), tope_semanal_default: n("t"), mult_extra: n("x"), prima_dominical: n("p"), permitir_doble_turno: dobleV }).eq("id", 1));
+      guardar(supabase.from("parametros").update({ descanso_min_h: n("d"), max_dias_seguidos: n("m"), tope_semanal_default: n("t"), mult_extra: n("x"), prima_dominical: n("p"), permitir_doble_turno: dobleV, comida_min: n("cm"), comida_desde_h: n("cd"), max_horas_turno: n("mt"), max_horas_semana: n("ms"), max_extra_sin_motivo: n("me") }).eq("id", 1));
       setEd(false); setDoble(null);
     }}>
       <Campo label="Descanso mínimo entre turnos (horas)" name="d" v={parametros.descanso_min_h} disabled={!ed} />
@@ -134,10 +134,16 @@ function Parametros() {
       <Campo label="Tope semanal de horas (por defecto)" name="t" v={parametros.tope_semanal_default} disabled={!ed} />
       <Campo label="Multiplicador hora extra" name="x" v={parametros.mult_extra} step="0.05" disabled={!ed} />
       <Campo label="Prima dominical (0.25 = 25%)" name="p" v={parametros.prima_dominical} step="0.01" disabled={!ed} />
+      <Campo label="Minutos de comida descontados" name="cm" v={parametros.comida_min} disabled={!ed} />
+      <Campo label="Se descuenta la comida en turnos de más de (horas)" name="cd" v={parametros.comida_desde_h} step="0.5" disabled={!ed} />
+      <Campo label="Duración máxima de un turno (horas)" name="mt" v={parametros.max_horas_turno} step="0.5" disabled={!ed} />
+      <Campo label="Máximo de horas a la semana" name="ms" v={parametros.max_horas_semana} step="0.5" disabled={!ed} />
+      <Campo label="Horas extra sin pedir motivo" name="me" v={parametros.max_extra_sin_motivo} step="0.5" disabled={!ed} />
       <label className="flex items-center justify-between gap-3 text-sm">
         <span>Doblar turno en el mismo día<span className="block text-xs text-muted-foreground">Permite dos turnos el mismo día si no se solapan</span></span>
         <Switch checked={dobleV} onCheckedChange={setDoble} disabled={!ed} aria-label="Doblar turno en el mismo día" />
       </label>
+      <p className="rounded-md bg-alerta/15 px-3 py-2 text-xs">Valores de ejemplo; no reemplazan el asesoramiento laboral del negocio.</p>
       {staff && (ed ? (
         <div className="flex gap-2">
           <Button type="submit" className="w-fit">Guardar</Button>
@@ -235,6 +241,7 @@ type Franja = { id: string; dia: number; local_id: string; puesto_id: string; in
 function FilaFranja({ f, locales, puestos, staff, guardar }: {
   f: Franja; locales: Local[]; puestos: { id: string; nombre: string }[]; staff: boolean; guardar: ReturnType<typeof useGuardar>;
 }) {
+  const maxTurno = useCatalogo().data?.parametros?.max_horas_turno ?? 9;
   const [ed, setEd] = useState(false);
   const [v, setV] = useState(() => ({
     dia: f.dia, local_id: f.local_id, puesto_id: f.puesto_id,
@@ -250,6 +257,10 @@ function FilaFranja({ f, locales, puestos, staff, guardar }: {
   const guardarFila = () => {
     if (Number(v.cobertura_minima) > Number(v.cupo_maximo)) {
       toast.error("La cobertura mínima no puede ser mayor que el cupo máximo.");
+      return;
+    }
+    if (horasFranja(v.inicio, v.fin) > Number(maxTurno)) {
+      toast.error(`Un turno no puede durar más de ${Number(maxTurno)} h.`);
       return;
     }
     guardar(supabase.from("franja").update({

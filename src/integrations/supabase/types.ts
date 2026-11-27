@@ -331,27 +331,42 @@ export type Database = {
       }
       parametros: {
         Row: {
+          comida_desde_h: number
+          comida_min: number
           descanso_min_h: number
           id: number
           max_dias_seguidos: number
+          max_extra_sin_motivo: number
+          max_horas_semana: number
+          max_horas_turno: number
           mult_extra: number
           permitir_doble_turno: boolean
           prima_dominical: number
           tope_semanal_default: number
         }
         Insert: {
+          comida_desde_h?: number
+          comida_min?: number
           descanso_min_h?: number
           id?: number
           max_dias_seguidos?: number
+          max_extra_sin_motivo?: number
+          max_horas_semana?: number
+          max_horas_turno?: number
           mult_extra?: number
           permitir_doble_turno?: boolean
           prima_dominical?: number
           tope_semanal_default?: number
         }
         Update: {
+          comida_desde_h?: number
+          comida_min?: number
           descanso_min_h?: number
           id?: number
           max_dias_seguidos?: number
+          max_extra_sin_motivo?: number
+          max_horas_semana?: number
+          max_horas_turno?: number
           mult_extra?: number
           permitir_doble_turno?: boolean
           prima_dominical?: number
@@ -467,6 +482,7 @@ export type Database = {
           estado: string
           franja_id: string
           id: string
+          motivo_extra: string | null
           origen_id: string | null
           persona_id: string
           tarifa_aplicada: number
@@ -477,6 +493,7 @@ export type Database = {
           estado?: string
           franja_id: string
           id?: string
+          motivo_extra?: string | null
           origen_id?: string | null
           persona_id: string
           tarifa_aplicada: number
@@ -487,6 +504,7 @@ export type Database = {
           estado?: string
           franja_id?: string
           id?: string
+          motivo_extra?: string | null
           origen_id?: string | null
           persona_id?: string
           tarifa_aplicada?: number
@@ -621,6 +639,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      horas_pagadas: { Args: { _fin: string; _ini: string }; Returns: number }
       persona_actual: { Args: never; Returns: string }
       reiniciar_demo: { Args: never; Returns: undefined }
       tarifa_vigente: {

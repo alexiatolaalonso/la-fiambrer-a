@@ -37,3 +37,13 @@ describe("franja de ausencia", () => {
   it("ausencia de mañana no cubre un turno de las 18:00", () => expect(ausenciaCubre("manana", "18:00")).toBe(false));
   it("día completo cubre cualquier turno", () => expect(ausenciaCubre("completo", "09:00")).toBe(true));
 });
+
+import { horasExtra, horasPagadas } from "./reglas";
+describe("comida y horas extra", () => {
+  it("un turno de 7 h cuenta 6,5 h (30 min de comida)", () => expect(horasPagadas("10:00", "17:00")).toBe(6.5));
+  it("un turno de 6 h justas no descuenta comida", () => expect(horasPagadas("10:00", "16:00")).toBe(6));
+  it("las horas por encima del tope son extra", () => {
+    expect(horasExtra(46, 40)).toBe(6);
+    expect(horasExtra(38, 40)).toBe(0);
+  });
+});
