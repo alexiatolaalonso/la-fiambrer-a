@@ -117,7 +117,6 @@ function Planificador() {
         <h1 className="mr-auto text-4xl text-primary">Planificador semanal</h1>
         <SelectorSemana semanas={cat.data!.semanas} valor={semanaId} onCambio={(v) => { setSel(v); setRechazo(null); }} />
         <Button variant="outline" onClick={nuevaSemana}>Nueva semana</Button>
-        <span className="text-xs text-muted-foreground">rev. {sem.data.semana.revision}</span>
         {sem.data.semana.publicada_en ? (
           <span className="rounded bg-ok/15 px-3 py-2 text-sm font-semibold text-ok">Publicada</span>
         ) : (
