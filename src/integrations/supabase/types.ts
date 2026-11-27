@@ -342,6 +342,7 @@ export type Database = {
           mult_extra: number
           permitir_doble_turno: boolean
           prima_dominical: number
+          suplemento_encargado: number
           tope_semanal_default: number
         }
         Insert: {
@@ -356,6 +357,7 @@ export type Database = {
           mult_extra?: number
           permitir_doble_turno?: boolean
           prima_dominical?: number
+          suplemento_encargado?: number
           tope_semanal_default?: number
         }
         Update: {
@@ -370,6 +372,7 @@ export type Database = {
           mult_extra?: number
           permitir_doble_turno?: boolean
           prima_dominical?: number
+          suplemento_encargado?: number
           tope_semanal_default?: number
         }
         Relationships: []

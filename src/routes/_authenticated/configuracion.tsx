@@ -126,7 +126,7 @@ function Parametros() {
   return (
     <form className="grid max-w-md gap-3" onSubmit={(e) => {
       e.preventDefault(); const f = new FormData(e.currentTarget); const n = (k: string) => Number(f.get(k));
-      guardar(supabase.from("parametros").update({ descanso_min_h: n("d"), max_dias_seguidos: n("m"), tope_semanal_default: n("t"), mult_extra: n("x"), prima_dominical: n("p"), permitir_doble_turno: dobleV, comida_min: n("cm"), comida_desde_h: n("cd"), max_horas_turno: n("mt"), max_horas_semana: n("ms"), max_extra_sin_motivo: n("me") }).eq("id", 1));
+      guardar(supabase.from("parametros").update({ descanso_min_h: n("d"), max_dias_seguidos: n("m"), tope_semanal_default: n("t"), mult_extra: n("x"), prima_dominical: n("p"), permitir_doble_turno: dobleV, comida_min: n("cm"), comida_desde_h: n("cd"), max_horas_turno: n("mt"), max_horas_semana: n("ms"), max_extra_sin_motivo: n("me"), suplemento_encargado: n("se") }).eq("id", 1));
       setEd(false); setDoble(null);
     }}>
       <Campo label="Descanso mínimo entre turnos (horas)" name="d" v={parametros.descanso_min_h} disabled={!ed} />
@@ -139,6 +139,7 @@ function Parametros() {
       <Campo label="Duración máxima de un turno (horas)" name="mt" v={parametros.max_horas_turno} step="0.5" disabled={!ed} />
       <Campo label="Máximo de horas a la semana" name="ms" v={parametros.max_horas_semana} step="0.5" disabled={!ed} />
       <Campo label="Horas extra sin pedir motivo" name="me" v={parametros.max_extra_sin_motivo} step="0.5" disabled={!ed} />
+      <Campo label="Suplemento por encargado ($ por hora)" name="se" v={parametros.suplemento_encargado} step="1" disabled={!ed} />
       <label className="flex items-center justify-between gap-3 text-sm">
         <span>Doblar turno en el mismo día<span className="block text-xs text-muted-foreground">Permite dos turnos el mismo día si no se solapan</span></span>
         <Switch checked={dobleV} onCheckedChange={setDoble} disabled={!ed} aria-label="Doblar turno en el mismo día" />

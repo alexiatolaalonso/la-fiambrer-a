@@ -71,6 +71,13 @@
       "when": 1795805767584,
       "tag": "0009_tarifas_costos_solo_admin",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1795806027246,
+      "tag": "0010_suplemento_encargado",
+      "breakpoints": true
     }
   ]
 }
