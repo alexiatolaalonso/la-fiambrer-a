@@ -35,3 +35,5 @@ use the editor.
 - Demo sign-in uses fixed demo accounts created on demand by a server function; team identity maps to `persona` by email.
 - Team members only see turnos of weeks with `semana.publicada_en` set (enforced in turno RLS); staff publish via `ejecutar_comando('publicar_semana')`, and closing a week also publishes it.
 - Paid hours come from SQL `horas_pagadas` (meal deduction from `parametros`), mirrored by `horasPagadas` in reglas.ts; limits (max shift, weekly max, extra-hours-without-reason) live in `parametros`, and `asignar` raises `REQUIERE_MOTIVO:` so the UI asks for a reason and retries with `motivo_extra`.
+- Tariffs and week costs are admin-only at the database level (tarifa RLS, costos_semana check); encargado sees neither, so UI must not depend on them for staff.
+- Planner shows a 'Conflicto de edición' banner with Recargar on stale revision instead of auto-refreshing, so the manager knows their change was not saved.

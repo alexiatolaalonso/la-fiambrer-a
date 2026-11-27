@@ -25,6 +25,12 @@ function Planificador() {
   const [ocupado, setOcupado] = useState(false);
   const [pideMotivo, setPideMotivo] = useState<{ persona: string; franja: string; detalle: string } | null>(null);
   const [motivoExtra, setMotivoExtra] = useState("");
+  const [conflicto, setConflicto] = useState(false);
+  /** Si otro encargado cambió la grilla, avisa en pantalla y no recarga sola. */
+  const esConflicto = (e: unknown) => {
+    if ((e as Error).message?.includes("Revisión desactualizada")) { setConflicto(true); return true; }
+    return false;
+  };
 
   const personas = cat.data?.personas ?? [];
   const alias = (id: string) => personas.find((p) => p.id === id)?.alias ?? id;
@@ -63,36 +69,38 @@ function Planificador() {
       setPideMotivo(null);
       setMotivoExtra("");
       toast.success(`${alias(personaId)} asignada`);
+      refrescar();
     } catch (e) {
       const motivo = (e as Error).message;
+      if (esConflicto(e)) return;
       if (motivo.startsWith("REQUIERE_MOTIVO:")) {
         setPideMotivo({ persona: personaId, franja: franjaId, detalle: motivo.replace("REQUIERE_MOTIVO:", "").trim() });
         return;
       }
       setRechazo({ franja: franjaId, motivo: `${alias(personaId)}: ${motivo}` });
       toast.error(`Rechazado — ${motivo}`);
+      refrescar();
     } finally {
       setOcupado(false);
-      refrescar();
     }
   }
   async function quitar(turnoId: string) {
     if (!sem.data) return;
     try { await ejecutar("quitar", { semana: semanaId, revision: sem.data.semana.revision, turno: turnoId }); }
-    catch (e) { toast.error((e as Error).message); }
+    catch (e) { if (esConflicto(e)) return; toast.error((e as Error).message); }
     refrescar();
   }
   async function cerrar() {
     if (!sem.data || !confirm("¿Cerrar la semana? Quedará en solo lectura y se congelan los costos.")) return;
     try { await ejecutar("cerrar_semana", { semana: semanaId, revision: sem.data.semana.revision }); toast.success("Semana cerrada"); }
-    catch (e) { toast.error((e as Error).message); }
+    catch (e) { if (esConflicto(e)) return; toast.error((e as Error).message); }
     refrescar();
   }
 
   async function publicar() {
     if (!sem.data || !confirm("¿Publicar la semana? El equipo podrá ver sus turnos.")) return;
     try { await ejecutar("publicar_semana", { semana: semanaId, revision: sem.data.semana.revision }); toast.success("Semana publicada: el equipo ya ve sus turnos"); }
-    catch (e) { toast.error((e as Error).message); }
+    catch (e) { if (esConflicto(e)) return; toast.error((e as Error).message); }
     refrescar();
   }
 
@@ -141,6 +149,13 @@ function Planificador() {
           <Button variant="outline" onClick={cerrar}>Cerrar semana</Button>
         )}
       </div>
+
+      {conflicto && (
+        <div role="alert" className="flex flex-wrap items-center gap-3 rounded-md border-l-4 border-alerta bg-alerta/15 px-4 py-2 text-sm">
+          <span><strong>Conflicto de edición:</strong> otra persona cambió esta semana mientras la tenías abierta. Tu cambio no se guardó.</span>
+          <Button size="sm" onClick={() => { setConflicto(false); setRechazo(null); refrescar(); }}>Recargar</Button>
+        </div>
+      )}
 
       {rechazo && (
         <div role="alert" className="rounded-md border-l-4 border-peligro bg-peligro/10 px-4 py-2 text-sm">

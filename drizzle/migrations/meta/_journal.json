@@ -64,6 +64,13 @@
       "when": 1795805180154,
       "tag": "0008_comida_topes_extra_motivo",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1795805767584,
+      "tag": "0009_tarifas_costos_solo_admin",
+      "breakpoints": true
     }
   ]
 }
