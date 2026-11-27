@@ -335,6 +335,7 @@ export type Database = {
           id: number
           max_dias_seguidos: number
           mult_extra: number
+          permitir_doble_turno: boolean
           prima_dominical: number
           tope_semanal_default: number
         }
@@ -343,6 +344,7 @@ export type Database = {
           id?: number
           max_dias_seguidos?: number
           mult_extra?: number
+          permitir_doble_turno?: boolean
           prima_dominical?: number
           tope_semanal_default?: number
         }
@@ -351,6 +353,7 @@ export type Database = {
           id?: number
           max_dias_seguidos?: number
           mult_extra?: number
+          permitir_doble_turno?: boolean
           prima_dominical?: number
           tope_semanal_default?: number
         }

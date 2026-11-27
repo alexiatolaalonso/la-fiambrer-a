@@ -50,6 +50,13 @@
       "when": 1795803022858,
       "tag": "0006_publicar_semana",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1795804038730,
+      "tag": "0007_permitir_doble_turno",
+      "breakpoints": true
     }
   ]
 }

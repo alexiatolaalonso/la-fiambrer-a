@@ -1,3 +1,4 @@
+import { Switch } from "@/components/ui/switch";
 import { createFileRoute } from "@tanstack/react-router";
 import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
@@ -117,24 +118,30 @@ function Parametros() {
   const ses = useSesion();
   const guardar = useGuardar();
   const [ed, setEd] = useState(false);
+  const [doble, setDoble] = useState<boolean | null>(null);
   const parametros = cat.data?.parametros;
   if (!parametros) return null;
+  const dobleV = doble ?? parametros.permitir_doble_turno;
   const staff = !!ses.data?.staff;
   return (
     <form className="grid max-w-md gap-3" onSubmit={(e) => {
       e.preventDefault(); const f = new FormData(e.currentTarget); const n = (k: string) => Number(f.get(k));
-      guardar(supabase.from("parametros").update({ descanso_min_h: n("d"), max_dias_seguidos: n("m"), tope_semanal_default: n("t"), mult_extra: n("x"), prima_dominical: n("p") }).eq("id", 1));
-      setEd(false);
+      guardar(supabase.from("parametros").update({ descanso_min_h: n("d"), max_dias_seguidos: n("m"), tope_semanal_default: n("t"), mult_extra: n("x"), prima_dominical: n("p"), permitir_doble_turno: dobleV }).eq("id", 1));
+      setEd(false); setDoble(null);
     }}>
       <Campo label="Descanso mínimo entre turnos (horas)" name="d" v={parametros.descanso_min_h} disabled={!ed} />
       <Campo label="Máximo de días seguidos" name="m" v={parametros.max_dias_seguidos} disabled={!ed} />
       <Campo label="Tope semanal de horas (por defecto)" name="t" v={parametros.tope_semanal_default} disabled={!ed} />
       <Campo label="Multiplicador hora extra" name="x" v={parametros.mult_extra} step="0.05" disabled={!ed} />
       <Campo label="Prima dominical (0.25 = 25%)" name="p" v={parametros.prima_dominical} step="0.01" disabled={!ed} />
+      <label className="flex items-center justify-between gap-3 text-sm">
+        <span>Doblar turno en el mismo día<span className="block text-xs text-muted-foreground">Permite dos turnos el mismo día si no se solapan</span></span>
+        <Switch checked={dobleV} onCheckedChange={setDoble} disabled={!ed} aria-label="Doblar turno en el mismo día" />
+      </label>
       {staff && (ed ? (
         <div className="flex gap-2">
           <Button type="submit" className="w-fit">Guardar</Button>
-          <Button type="button" variant="ghost" className="w-fit" onClick={() => setEd(false)}>Cancelar</Button>
+          <Button type="button" variant="ghost" className="w-fit" onClick={() => { setEd(false); setDoble(null); }}>Cancelar</Button>
         </div>
       ) : (
         <Button type="button" variant="outline" className="w-fit" onClick={() => setEd(true)}>Editar</Button>
