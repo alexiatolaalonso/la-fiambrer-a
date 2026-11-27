@@ -43,6 +43,13 @@
       "when": 1795800456383,
       "tag": "0005_crear_semana_columnas_generadas",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1795803022858,
+      "tag": "0006_publicar_semana",
+      "breakpoints": true
     }
   ]
 }

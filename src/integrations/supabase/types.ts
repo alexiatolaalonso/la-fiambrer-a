@@ -406,18 +406,21 @@ export type Database = {
           cerrada_en: string | null
           estado: string
           id: string
+          publicada_en: string | null
           revision: number
         }
         Insert: {
           cerrada_en?: string | null
           estado?: string
           id: string
+          publicada_en?: string | null
           revision?: number
         }
         Update: {
           cerrada_en?: string | null
           estado?: string
           id?: string
+          publicada_en?: string | null
           revision?: number
         }
         Relationships: []

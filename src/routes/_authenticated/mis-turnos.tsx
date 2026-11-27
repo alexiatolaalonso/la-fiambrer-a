@@ -61,6 +61,11 @@ function MisTurnos() {
         }}>Compartir</Button>
       </div>
 
+      {(cat.data?.semanas ?? []).filter((s) => !s.publicada_en).map((s) => (
+        <p key={s.id} role="status" className="rounded-md border-l-4 border-alerta bg-alerta/15 px-4 py-2 text-sm">
+          Tus turnos de la semana del {s.id.slice(8)}/{s.id.slice(5, 7)} aún no están publicados.
+        </p>
+      ))}
       <section className="pizarra divide-y divide-border">
         {turnos.length === 0 && <p className="p-3 text-sm text-muted-foreground">No tienes turnos asignados.</p>}
         {turnos.map((t) => {

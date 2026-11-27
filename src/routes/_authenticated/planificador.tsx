@@ -79,6 +79,13 @@ function Planificador() {
     refrescar();
   }
 
+  async function publicar() {
+    if (!sem.data || !confirm("¿Publicar la semana? El equipo podrá ver sus turnos.")) return;
+    try { await ejecutar("publicar_semana", { semana: semanaId, revision: sem.data.semana.revision }); toast.success("Semana publicada: el equipo ya ve sus turnos"); }
+    catch (e) { toast.error((e as Error).message); }
+    refrescar();
+  }
+
   async function nuevaSemana() {
     try {
       const r = (await ejecutar("crear_semana", {})) as { semana?: string };
@@ -111,10 +118,18 @@ function Planificador() {
         <SelectorSemana semanas={cat.data!.semanas} valor={semanaId} onCambio={(v) => { setSel(v); setRechazo(null); }} />
         <Button variant="outline" onClick={nuevaSemana}>Nueva semana</Button>
         <span className="text-xs text-muted-foreground">rev. {sem.data.semana.revision}</span>
+        {sem.data.semana.publicada_en ? (
+          <span className="rounded bg-ok/15 px-3 py-2 text-sm font-semibold text-ok">Publicada</span>
+        ) : (
+          <>
+            <span className="rounded bg-alerta/20 px-3 py-2 text-sm font-semibold">Borrador · el equipo aún no ve estos turnos</span>
+            <Button onClick={publicar}>Publicar</Button>
+          </>
+        )}
         {cerrada ? (
           <span className="rounded bg-muted px-3 py-2 text-sm font-semibold">Semana cerrada · solo lectura</span>
         ) : (
-          <Button onClick={cerrar}>Cerrar semana</Button>
+          <Button variant="outline" onClick={cerrar}>Cerrar semana</Button>
         )}
       </div>
 
