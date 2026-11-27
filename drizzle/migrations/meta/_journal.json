@@ -29,6 +29,20 @@
       "when": 1795606577800,
       "tag": "0003_ausencia_franja",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1795800445559,
+      "tag": "0004_habilidades_insensibles_y_crear_semana",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1795800456383,
+      "tag": "0005_crear_semana_columnas_generadas",
+      "breakpoints": true
     }
   ]
 }

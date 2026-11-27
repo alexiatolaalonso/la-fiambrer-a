@@ -79,6 +79,15 @@ function Planificador() {
     refrescar();
   }
 
+  async function nuevaSemana() {
+    try {
+      const r = (await ejecutar("crear_semana", {})) as { semana?: string };
+      toast.success("Semana siguiente creada");
+      await refrescar();
+      if (r.semana) { setSel(r.semana); setRechazo(null); }
+    } catch (e) { toast.error((e as Error).message); }
+  }
+
   if (cat.isLoading || sem.isLoading) return <p className="text-muted-foreground">Cargando pizarra…</p>;
   if (!semanaId || !sem.data) return <p>No hay semanas.</p>;
 
@@ -100,6 +109,7 @@ function Planificador() {
       <div className="flex flex-wrap items-end gap-3">
         <h1 className="mr-auto text-4xl text-primary">Planificador semanal</h1>
         <SelectorSemana semanas={cat.data!.semanas} valor={semanaId} onCambio={(v) => { setSel(v); setRechazo(null); }} />
+        <Button variant="outline" onClick={nuevaSemana}>Nueva semana</Button>
         <span className="text-xs text-muted-foreground">rev. {sem.data.semana.revision}</span>
         {cerrada ? (
           <span className="rounded bg-muted px-3 py-2 text-sm font-semibold">Semana cerrada · solo lectura</span>
